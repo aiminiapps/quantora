@@ -1,7 +1,7 @@
-// src/app/page.js
 'use client';
 
-import { useEffect, useState, Suspense, useCallback } from 'react';
+import { useEffect, useState, Suspense, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -17,21 +17,349 @@ import InviteCenter from '@/components/InviteCenter';
 import CryptoAgentCenter from '@/components/CryptoAgentCenter';
 import DataCenterHome from '@/components/DataCenterHome';
 import SearchAgent from '@/components/ui/SearchAgent';
+import { 
+  HiOutlineUsers,
+  HiSparkles,
+  HiArrowRight,
+  HiPlay,
+} from 'react-icons/hi';
+import { LuBrainCircuit } from "react-icons/lu";
 import { SquareCheckBig, UserPlus, History, Check, CheckCircle } from 'lucide-react';
 
-// Earning Timer Component
+// Premium Intro Carousel Component
+const QuantoraIntroCarousel = ({ user, onComplete }) => {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [autoPlay, setAutoPlay] = useState(true);
+  const autoPlayRef = useRef(null);
+
+  const slides = [
+    {
+      id: 1,
+      title: "Welcome to Quantora",
+      subtitle: "Institutional-Grade AI Research",
+      description: "Join 120K+ crypto analysts worldwide leveraging advanced AI for professional market intelligence.",
+      icon: LuBrainCircuit,
+      gradient: "from-lime-400 to-green-500",
+      color: "lime-400",
+      stats: { users: "120K+", accuracy: "96%", reports: "50K+" },
+      animation: "fadeInUp"
+    },
+    {
+      id: 2,
+      title: "Meet Your AI Research Team",
+      subtitle: "5 Specialized Intelligence Agents",
+      description: "TokenMaster, WhaleWatch, VestGuard, PulseAI, and RiskShield - each expert in their domain.",
+      icon: HiOutlineUsers,
+      gradient: "from-cyan-400 to-blue-500",
+      color: "cyan-400",
+      agents: ["TokenMaster AI", "WhaleWatch AI", "VestGuard AI"],
+      animation: "slideInRight"
+    },
+    {
+      id: 3,
+      title: "Start Your Research Journey",
+      subtitle: "Premium Intelligence Platform",
+      description: "Access advanced analytics, real-time insights, and AI-powered research tools designed for professionals.",
+      icon: HiPlay,
+      gradient: "from-violet-400 to-pink-500",
+      color: "violet-400",
+      features: ["Real-time Analysis", "Export Reports", "Community Insights", "Risk Assessment"],
+      animation: "zoomIn"
+    }
+  ];
+
+  // Auto-play functionality
+  useEffect(() => {
+    if (autoPlay) {
+      autoPlayRef.current = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % slides.length);
+      }, 4000);
+    }
+    return () => clearInterval(autoPlayRef.current);
+  }, [autoPlay, slides.length]);
+
+  const nextSlide = () => {
+    setAutoPlay(false);
+    setCurrentSlide((prev) => (prev + 1) % slides.length);
+  };
+
+  const prevSlide = () => {
+    setAutoPlay(false);
+    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+  };
+
+  const goToSlide = (index) => {
+    setAutoPlay(false);
+    setCurrentSlide(index);
+  };
+
+  const handleComplete = () => {
+    localStorage.setItem('quantora_intro_completed', 'true');
+    onComplete();
+  };
+
+  const handleSkip = () => {
+    localStorage.setItem('quantora_intro_completed', 'true');
+    onComplete();
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black relative overflow-hidden">
+      {/* Premium Background Effects */}
+      <motion.div 
+        className="absolute w-72 h-72 rounded-full bg-lime-400/10 blur-3xl -top-20 -left-20"
+        animate={{
+          scale: [1, 1.2, 1],
+          opacity: [0.3, 0.6, 0.3]
+        }}
+        transition={{ duration: 8, repeat: Infinity }}
+      />
+      <motion.div 
+        className="absolute w-48 h-48 rounded-full bg-cyan-400/10 blur-3xl -bottom-20 -right-20"
+        animate={{
+          scale: [1, 1.3, 1],
+          opacity: [0.4, 0.7, 0.4],
+          x: [0, -20, 0],
+          y: [0, 20, 0]
+        }}
+        transition={{ duration: 10, repeat: Infinity }}
+      />
+
+      {/* User Info Header */}
+      <motion.div 
+        className="absolute top-8 left-0 right-0 z-20"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.8 }}
+      >
+        <div className="flex items-center justify-between px-3">
+          <div className="flex items-center gap-3">
+            <motion.div
+              className="w-12 h-12 rounded-full overflow-hidden border-2 border-lime-400/30 shadow-lg"
+              whileHover={{ scale: 1.05 }}
+            >
+              <img
+                src={user?.photo_url || `https://api.dicebear.com/9.x/personas/svg?seed=${user?.first_name || 'User'}&backgroundColor=b6e3f4`}
+                alt="User Avatar"
+                className="w-full h-full object-cover"
+              />
+            </motion.div>
+            <div>
+              <p className="text-white font-bold text-lg">
+                Welcome, {user?.first_name || 'Researcher'}!
+              </p>
+              <p className="text-white/70 text-sm">
+                Ready to explore AI research?
+              </p>
+            </div>
+          </div>
+          
+          <motion.button
+            onClick={handleSkip}
+            className="px-4 glass-button py-2 bg-white/10 backdrop-blur-sm rounded-xl text-white/80 text-sm font-semibold hover:bg-white/20 transition-all"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            Skip
+          </motion.button>
+        </div>
+      </motion.div>
+
+      {/* Main Slide Content */}
+      <div className="relative h-screen flex items-center justify-center px-6">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentSlide}
+            className="text-center max-w-lg"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            transition={{ duration: 0.6, type: "spring", bounce: 0.3 }}
+          >
+            {/* Slide Icon */}
+            <motion.div
+              className={`w-24 h-24 hidden mx-auto mb-8 bg-gradient-to-r ${slides[currentSlide].gradient} rounded-3xl flex items-center justify-center shadow-2xl`}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.2, type: "spring", bounce: 0.5 }}
+            >
+              {/* <slides[currentSlide].icon className="w-12 h-12 text-white" /> */}
+            </motion.div>
+
+            {/* Slide Content */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <h1 className="text-2xl font-bold text-white mb-3 tracking-normal">
+                {slides[currentSlide].title}
+              </h1>
+              <p className={`text-xl hidden font-bold text-${slides[currentSlide].color} mb-4 uppercase tracking-wider`}>
+                {slides[currentSlide].subtitle}
+              </p>
+              <p className="text-white/80 text-sm text-balance leading-relaxed mb-8">
+                {slides[currentSlide].description}
+              </p>
+            </motion.div>
+
+            {/* Slide-Specific Content */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.6 }}
+            >
+              {/* Slide 1: Stats */}
+              {currentSlide === 0 && (
+                <div className="grid grid-cols-3 gap-4">
+                  {Object.entries(slides[0].stats).map(([key, value], index) => (
+                    <motion.div
+                      key={key}
+                      className="glass p-4 rounded-2xl"
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.1 + index * 0.1, type: "spring" }}
+                    >
+                      <div className={`text-${slides[0].color} font-black text-2xl mb-1`}>
+                        {value}
+                      </div>
+                      <div className="text-white/70 text-xs font-semibold uppercase tracking-wider">
+                        {key.replace(/([A-Z])/g, ' $1').toLowerCase()}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+
+              {/* Slide 2: AI Agents */}
+              {currentSlide === 1 && (
+                <div className="grid grid-cols-1 gap-1 ">
+                  {slides[1].agents.map((agent, index) => (
+                    <motion.div
+                      key={agent}
+                      className="flex items-center gap-3 glass glass-p rounded-xl"
+                      initial={{ x: -50, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: 0.8 + index * 0.1 }}
+                    >
+                      <div className={`w-8 h-8 rounded-xl bg-${slides[1].color}/20 flex items-center justify-center`}>
+                        <LuBrainCircuit className={`w-4 h-4 text-${slides[1].color}`} />
+                      </div>
+                      <span className="text-white font-semibold text-sm">{agent}</span>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+
+              {/* Slide 3: Features */}
+              {currentSlide === 2 && (
+                <div className="grid grid-cols-1 gap-3 ">
+                  {/* {slides[2].features.map((feature, index) => (
+                    <motion.div
+                      key={feature}
+                      className="glass p-4 rounded-xl -mt-5 text-center"
+                      initial={{ scale: 0.8, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ delay: 0.8 + index * 0.1, type: "spring" }}
+                    >
+                      <HiSparkles className={`w-6 h-6 text-${slides[2].color} mx-auto mb-2`} />
+                      <span className="text-white text-sm font-semibold">{feature}</span>
+                    </motion.div>
+                  ))} */}
+                  <motion.button
+                    onClick={handleSkip}
+                    className="px-4 flex w-[75%] items-center gap-3 justify-center mx-auto glass-button py-2 bg-white/10 backdrop-blur-sm rounded-xl text-white/80 text-sm font-semibold hover:bg-white/20 transition-all"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Get Started  <HiArrowRight className="w-4 h-4" />
+                  </motion.button>
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Slide Indicators */}
+      <div className="absolute bottom-32 left-0 right-0 flex justify-center gap-3">
+        {slides.map((_, index) => (
+          <motion.button
+            key={index}
+            onClick={() => goToSlide(index)}
+            className={cn(
+              "w-3 h-3 rounded-full transition-all duration-300",
+              currentSlide === index 
+                ? `bg-${slides[currentSlide].color} scale-125 shadow-lg` 
+                : "bg-white/30"
+            )}
+            whileHover={{ scale: 1.2 }}
+            whileTap={{ scale: 0.9 }}
+          />
+        ))}
+      </div>
+
+      {/* Navigation Controls */}
+      <div className="absolute bottom-16 left-0 right-0 px-6">
+        <div className="flex items-center justify-between">
+          <motion.button
+            onClick={prevSlide}
+            className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition-all"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <HiArrowRight className="w-5 h-5 transform rotate-180" />
+          </motion.button>
+
+          {currentSlide === slides.length - 1 ? (
+            <motion.button
+              onClick={handleComplete}
+              className={`px-8 py-4 hidden absolute glass bg-gradient-to-r ${slides[currentSlide].gradient} rounded-2xl text-white font-black text-lg shadow-2xl`}
+              whileHover={{ scale: 1.05, y: -2 }}
+              whileTap={{ scale: 0.95 }}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", bounce: 0.5 }}
+            >
+              Get Started
+            </motion.button>
+          ) : (
+            <motion.button
+              onClick={nextSlide}
+              className={`px-6 py-3 hidden bg-gradient-to-r ${slides[currentSlide].gradient} rounded-xl text-white font-bold flex items-center gap-2 shadow-xl`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <span>Next</span>
+              <HiArrowRight className="w-4 h-4" />
+            </motion.button>
+          )}
+
+          <motion.button
+            onClick={nextSlide}
+            className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition-all"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <HiArrowRight className="w-5 h-5" />
+          </motion.button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Your existing components remain the same...
 const EarningTimer = () => {
   const { earningTimer, startEarningTimer, formatTime } = useStore();
 
-  // Synchronize timer state on mount
   useEffect(() => {
     if (earningTimer.isActive && earningTimer.startTimestamp) {
-      const duration = 6 * 60 * 60; // 6 hours in seconds
+      const duration = 6 * 60 * 60;
       const elapsedSeconds = Math.floor((Date.now() - earningTimer.startTimestamp) / 1000);
       const newTimeRemaining = Math.max(duration - elapsedSeconds, 0);
 
       if (newTimeRemaining === 0 && !earningTimer.hasAwardedPoints) {
-        // Timer should have completed; updateEarningTimer will handle points
         useStore.getState().updateEarningTimer();
       }
     }
@@ -67,7 +395,6 @@ const EarningTimer = () => {
   );
 };
 
-// User Balance Component
 const UserBalance = () => {
   const { spaiPoints, agentTickets } = useStore();
   return (
@@ -82,7 +409,6 @@ const UserBalance = () => {
   );
 };
 
-// Social Task Component
 const SocialTask = () => {
   const { addSpaiPoints, setTwitterFollowCompleted, tasks } = useStore();
   const [completed, setCompleted] = useState(tasks.followX.completed);
@@ -133,7 +459,6 @@ const SocialTask = () => {
   );
 };
 
-// Navigation Buttons Component
 const NavigationButtons = ({ setActiveTab, earningTimer, startEarningTimer }) => {
   const { hapticFeedback } = useTelegram();
 
@@ -182,7 +507,6 @@ const NavigationButtons = ({ setActiveTab, earningTimer, startEarningTimer }) =>
   );
 };
 
-// Debug Panel Component (for development)
 const DebugPanel = ({ user, error, webApp }) => {
   const [showDebug, setShowDebug] = useState(false);
 
@@ -222,8 +546,8 @@ const DebugPanel = ({ user, error, webApp }) => {
 function TelegramMiniApp() {
   const [activeTab, setActiveTab] = useState('home');
   const [showLoader, setShowLoader] = useState(true);
+  const [showIntro, setShowIntro] = useState(false);
   
-  // Use the custom Telegram hook
   const { 
     user, 
     loading: telegramLoading, 
@@ -245,6 +569,14 @@ function TelegramMiniApp() {
   
   const router = useRouter();
 
+  // Check if intro should be shown
+  useEffect(() => {
+    const introCompleted = localStorage.getItem('quantora_intro_completed');
+    if (!introCompleted) {
+      setShowIntro(true);
+    }
+  }, []);
+
   // Show loader for 1.5 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -253,7 +585,6 @@ function TelegramMiniApp() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Update store when user changes
   useEffect(() => {
     if (user) {
       console.log('✅ Setting user in store:', user);
@@ -296,7 +627,6 @@ function TelegramMiniApp() {
 
   const renderHomeContent = () => (
     <div className="space-y-6">
-      {/* <EarningTimer /> */}
       <SocialTask />
       <NavigationButtons
         setActiveTab={handleTabNavigation}
@@ -314,7 +644,6 @@ function TelegramMiniApp() {
         </button>
       </div>
       <DataCenterHome />
-      {/* <UserBalance /> */}
       <div className="h-10" />
     </div>
   );
@@ -341,6 +670,16 @@ function TelegramMiniApp() {
   // Show loader while initializing
   if (showLoader || telegramLoading) {
     return <CustomLoader />;
+  }
+
+  // Show intro carousel if not completed
+  if (showIntro && user) {
+    return (
+      <QuantoraIntroCarousel 
+        user={user} 
+        onComplete={() => setShowIntro(false)} 
+      />
+    );
   }
 
   // Show error state with retry options
@@ -380,11 +719,8 @@ function TelegramMiniApp() {
   return (
     <Suspense fallback={<CustomLoader />}>
       <div className="min-h-screen max-w-md w-full mx-auto text-white flex flex-col items-center p-4 relative overflow-hidden">
-        {/* Debug Panel for development */}
         <DebugPanel user={user} error={telegramError} webApp={webApp} />
         
-        {/* Background decorations */}
-        {/* <div className="absolute size-52 bg-[#132427] rounded-full blur-3xl  -top-14 -left-14" /> */}
         <div className="absolute size-52 bg-[#132427] rounded-full blur-2xl -bottom-14 -right-14" />
         
         <div className="w-full">
@@ -392,7 +728,6 @@ function TelegramMiniApp() {
           <SearchParamsWrapper setActiveTab={setActiveTab} renderContent={renderContent} />
         </div>
         
-        {/* Bottom Navigation */}
         <div className="fixed bottom-4 left-0 right-0 flex justify-center z-50">
           <BottomNav
             activeTab={activeTab}
@@ -405,7 +740,6 @@ function TelegramMiniApp() {
   );
 }
 
-// Component to handle useSearchParams
 const SearchParamsWrapper = ({ setActiveTab, renderContent }) => {
   const searchParams = useSearchParams();
 
