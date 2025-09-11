@@ -11,7 +11,6 @@ import CustomLoader from '@/components/Loader';
 import BottomNav from '@/components/BottomNav';
 import CoinAgent from '@/components/CoinAgent';
 import Agent from '@/components/Agent';
-import AiNews from '@/components/AiNews';
 import TaskCenter from '@/components/TaskCenter';
 import InviteCenter from '@/components/InviteCenter';
 import CryptoAgentCenter from '@/components/CryptoAgentCenter';
@@ -19,7 +18,6 @@ import DataCenterHome from '@/components/DataCenterHome';
 import SearchAgent from '@/components/ui/SearchAgent';
 import { 
   HiOutlineUsers,
-  HiSparkles,
   HiArrowRight,
   HiPlay,
 } from 'react-icons/hi';
@@ -230,7 +228,6 @@ const QuantoraIntroCarousel = ({ user, onComplete }) => {
                   ))}
                 </div>
               )}
-
               {/* Slide 2: AI Agents */}
               {currentSlide === 1 && (
                 <div className="grid grid-cols-1 gap-1 ">
