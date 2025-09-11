@@ -276,7 +276,7 @@ const CyberpunkDataHeist = ({ onComplete }) => {
                     : `0 0 10px currentColor`
                 }}
               >
-                >>> {typedText}
+                {typedText}
                 <motion.span
                   animate={{ opacity: [1, 0] }}
                   transition={{ duration: 0.5, repeat: Infinity }}
