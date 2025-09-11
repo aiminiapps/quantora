@@ -23,6 +23,7 @@ import {
 } from 'react-icons/hi';
 import { LuBrainCircuit } from "react-icons/lu";
 import { SquareCheckBig, UserPlus, History, Check, CheckCircle } from 'lucide-react';
+import CyberpunkDataHeist from '@/components/CyberpunkDataHeist';
 
 // Premium Intro Carousel Component
 const QuantoraIntroCarousel = ({ user, onComplete }) => {
@@ -624,6 +625,7 @@ function TelegramMiniApp() {
 
   const renderHomeContent = () => (
     <div className="space-y-6">
+      <CyberpunkDataHeist/>
       <SocialTask />
       <NavigationButtons
         setActiveTab={handleTabNavigation}
