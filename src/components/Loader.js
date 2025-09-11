@@ -13,8 +13,6 @@ import { LuBrainCircuit } from "react-icons/lu";
 import Image from 'next/image';
 
 const QuantoraLoader = () => {
-  const canvasRef = useRef(null);
-  const animationRef = useRef(null);
   const [loadingText, setLoadingText] = useState('Initializing');
   const [progress, setProgress] = useState(0);
   const [currentAgent, setCurrentAgent] = useState(0);
