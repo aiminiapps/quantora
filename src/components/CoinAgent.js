@@ -8,21 +8,13 @@ import {
   HiOutlineDocumentSearch, 
   HiOutlineGlobeAlt, 
   HiOutlineUsers, 
-  HiOutlineTrendingUp,
   HiArrowRight,
   HiOutlineShieldCheck,
-  HiOutlineLightningBolt,
-  HiSparkles,
-  HiPlay,
   HiEye,
   HiOutlineChatAlt,
-  HiOutlineClipboard,
-  HiOutlineDownload,
   HiOutlineRefresh,
-  HiOutlineStar,
   HiOutlineSearch
 } from 'react-icons/hi';
-import { LuBrainCircuit } from "react-icons/lu";
 
 export default function QuantoraIntelligenceHub() {
   const [agents, setAgents] = useState([]);
