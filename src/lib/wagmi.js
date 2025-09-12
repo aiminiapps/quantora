@@ -1,14 +1,12 @@
-import { defaultWagmiConfig } from '@web3modal/wagmi/react'
-import { http } from 'wagmi'
-import { mainnet, polygon, arbitrum, base, optimism, sepolia, bsc } from 'wagmi/chains'
+import { createConfig, http } from 'wagmi'
+import { walletConnect, metaMask, injected } from 'wagmi/connectors'
+import { mainnet, polygon, arbitrum, base, optimism, bsc, sepolia } from 'wagmi/chains'
 
 export const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID
-if (!projectId) throw new Error('Missing NEXT_PUBLIC_WC_PROJECT_ID')
+if (!projectId) throw new Error('Missing NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID')
 
-// Define supported chains
 export const chains = [mainnet, polygon, arbitrum, base, optimism, bsc, sepolia]
 
-// Optional: your own RPC transports (recommended for production)
 const transports = {
   [mainnet.id]: http(),
   [polygon.id]: http(),
@@ -26,10 +24,13 @@ export const metadata = {
   icons: [process.env.NEXT_PUBLIC_APP_ICON || 'https://example.com/icon.png']
 }
 
-// ✅ wagmi config (already complete, no createConfig needed)
-export const config = defaultWagmiConfig({
-  projectId,
+export const config = createConfig({
   chains,
-  metadata,
-  transports
+  transports,
+  connectors: [
+    injected({ shimDisconnect: true }), // Browser wallets like Brave
+    metaMask({ shimDisconnect: true }), // Explicit MetaMask support
+    walletConnect({ projectId, metadata, showQrModal: true }) // WalletConnect v2
+    // 🚫 no coinbaseWallet connector, so no Coinbase telemetry
+  ]
 })

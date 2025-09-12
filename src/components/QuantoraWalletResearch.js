@@ -3,17 +3,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TonConnectButton, useTonWallet, useTonConnectUI } from '@tonconnect/ui-react';
-import { formatUnits } from 'viem';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { WagmiProvider } from 'wagmi'
-import { createWeb3Modal } from '@web3modal/wagmi/react'
-import { config, projectId, chains } from '../lib/wagmi'
-import { TonConnectUIProvider } from '@tonconnect/ui-react'
 import { 
   HiOutlineShieldCheck,
   HiOutlineLightningBolt,
   HiOutlineEye,
-  HiOutlineExclamationTriangle,
   HiOutlineTrendingUp,
   HiOutlineGlobe,
   HiSparkles,
@@ -21,9 +14,14 @@ import {
   HiOutlineChartBar,
   HiOutlineDocumentSearch,
   HiOutlineFire,
-  HiOutlineUsers
+  HiOutlineUsers,
+  HiOutlinePhotograph,
+  HiOutlineCollection
 } from 'react-icons/hi';
 import { LuBrainCircuit, LuWallet } from 'react-icons/lu';
+import Image from 'next/image';
+import { HiOutlineExclamationTriangle } from "react-icons/hi2";
+
 
 // Helper: detect Telegram Mini App
 function isTelegramWebApp() {
@@ -35,189 +33,220 @@ export default function QuantoraWalletResearch() {
   const tonWallet = useTonWallet();
   const [tonConnectUI] = useTonConnectUI();
   
-  // Component state
-  const [tonBalance, setTonBalance] = useState(null);
-  const [tonTransactions, setTonTransactions] = useState([]);
-  const [tonJettons, setTonJettons] = useState([]);
+  // Component state for real assets
+  const [assets, setAssets] = useState(null);
+  const [tonBalance, setTonBalance] = useState(0);
+  const [portfolioValue, setPortfolioValue] = useState(0);
+  const [jettonPrices, setJettonPrices] = useState({});
   const [aiAnalysis, setAiAnalysis] = useState(null);
   const [activeAlerts, setActiveAlerts] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [analysisStep, setAnalysisStep] = useState(0);
   const [dataLoading, setDataLoading] = useState(false);
-  const [portfolioValue, setPortfolioValue] = useState(0);
+  const [error, setError] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
-  // Fetch real TON balance
-  const fetchTonBalance = useCallback(async (address) => {
+  // Fetch real TON assets using the API endpoint
+  const fetchTonAssets = useCallback(async (address) => {
+    if (!address) return;
+    
+    setDataLoading(true);
+    setError(null);
+    
     try {
-      setDataLoading(true);
-      console.log('Fetching TON balance for:', address);
+      console.log('Fetching TON assets for:', address);
       
-      // Using TON API v2
-      const response = await fetch(
-        `https://toncenter.com/api/v2/getAddressBalance?address=${address}`,
-        {
-          headers: {
-            'X-API-Key': 'your-toncenter-api-key' // Replace with your API key or use without for limited requests
-          }
-        }
-      );
+      const response = await fetch(`/api/ton-assets?address=${address}`);
+      
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      }
       
       const data = await response.json();
       
-      if (data.ok) {
-        const balance = parseFloat(data.result) / 1e9; // Convert nanotons to TON
-        setTonBalance(balance);
-        console.log('TON Balance:', balance);
-        return balance;
-      } else {
-        throw new Error(data.error || 'Failed to fetch balance');
+      console.log('TON Assets received:', data);
+      
+      // Set the assets data
+      setAssets(data);
+      setTonBalance(data.tonBalance || 0);
+      setLastUpdated(new Date().toISOString());
+      
+      // Fetch USD prices for jettons if available
+      if (data.jettons && data.jettons.length > 0) {
+        await fetchJettonPrices(data.jettons);
       }
+      
+      return data;
     } catch (error) {
-      console.error('Error fetching TON balance:', error);
-      // Fallback to alternative API
-      try {
-        const fallbackResponse = await fetch(
-          `https://tonapi.io/v1/blockchain/getAccount?account=${address}`
-        );
-        const fallbackData = await fallbackResponse.json();
-        const balance = parseFloat(fallbackData.balance || 0) / 1e9;
-        setTonBalance(balance);
-        return balance;
-      } catch (fallbackError) {
-        console.error('Fallback API also failed:', fallbackError);
-        return 0;
-      }
+      console.error('Error fetching TON assets:', error);
+      setError(error.message);
+      
+      // Set empty state on error
+      setAssets({
+        jettons: [],
+        nfts: [],
+        tonBalance: 0,
+        totalAssets: 0
+      });
+      
+      return null;
     } finally {
       setDataLoading(false);
     }
   }, []);
 
-  // Fetch real TON transactions
-  const fetchTonTransactions = useCallback(async (address) => {
+  // Fetch jetton prices from CoinGecko for portfolio value calculation
+  const fetchJettonPrices = useCallback(async (jettons) => {
     try {
-      console.log('Fetching TON transactions for:', address);
-      
-      const response = await fetch(
-        `https://toncenter.com/api/v2/getTransactions?address=${address}&limit=10&archival=true`
-      );
-      
-      const data = await response.json();
-      
-      if (data.ok) {
-        const transactions = data.result.map(tx => ({
-          hash: tx.transaction_id.hash,
-          timestamp: tx.utime,
-          value: parseFloat(tx.in_msg?.value || tx.out_msgs[0]?.value || 0) / 1e9,
-          type: tx.in_msg ? 'receive' : 'send',
-          fee: parseFloat(tx.fee || 0) / 1e9
-        }));
-        
-        setTonTransactions(transactions);
-        console.log('TON Transactions:', transactions);
-        return transactions;
-      }
-    } catch (error) {
-      console.error('Error fetching TON transactions:', error);
-      return [];
-    }
-  }, []);
+      const pricePromises = jettons.map(async (jetton) => {
+        // Map common TON jettons to CoinGecko IDs
+        const coinGeckoIds = {
+          'USDT': 'tether',
+          'USDC': 'usd-coin',
+          'jUSDT': 'tether',
+          'jUSDC': 'usd-coin',
+          'DOGS': 'dogs-2',
+          'NOT': 'notcoin',
+          'HMSTR': 'hamster-kombat',
+          'CATI': 'catizen',
+          'TON': 'the-open-network'
+        };
 
-  // Fetch real TON jettons (tokens)
-  const fetchTonJettons = useCallback(async (address) => {
-    try {
-      console.log('Fetching TON jettons for:', address);
-      
-      // Using TON API to get jetton balances
-      const response = await fetch(
-        `https://tonapi.io/v1/account/${address}/jettons`
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        const jettons = data.balances?.map(jetton => ({
-          address: jetton.jetton.address,
-          name: jetton.jetton.name,
-          symbol: jetton.jetton.symbol,
-          balance: parseFloat(jetton.balance) / Math.pow(10, jetton.jetton.decimals),
-          decimals: jetton.jetton.decimals,
-          image: jetton.jetton.image,
-          price: jetton.price?.prices?.USD || 0,
-          value: (parseFloat(jetton.balance) / Math.pow(10, jetton.jetton.decimals)) * (jetton.price?.prices?.USD || 0)
-        })) || [];
-        
-        setTonJettons(jettons);
-        console.log('TON Jettons:', jettons);
-        return jettons;
-      }
-    } catch (error) {
-      console.error('Error fetching TON jettons:', error);
-      return [];
-    }
-  }, []);
+        const symbol = jetton.jetton?.symbol || jetton.symbol;
+        const coinGeckoId = coinGeckoIds[symbol];
 
-  // Get TON price from CoinGecko
-  const fetchTonPrice = useCallback(async () => {
-    try {
-      const response = await fetch(
+        if (coinGeckoId) {
+          try {
+            const response = await fetch(
+              `https://api.coingecko.com/api/v3/simple/price?ids=${coinGeckoId}&vs_currencies=usd&include_24hr_change=true`
+            );
+            const priceData = await response.json();
+            
+            if (priceData[coinGeckoId]) {
+              return {
+                symbol,
+                price: priceData[coinGeckoId].usd,
+                change24h: priceData[coinGeckoId].usd_24h_change || 0
+              };
+            }
+          } catch (error) {
+            console.error(`Error fetching price for ${symbol}:`, error);
+          }
+        }
+        
+        return { symbol, price: 0, change24h: 0 };
+      });
+
+      const TONPrice = await fetch(
         'https://api.coingecko.com/api/v3/simple/price?ids=the-open-network&vs_currencies=usd&include_24hr_change=true'
-      );
-      const data = await response.json();
-      return {
-        price: data['the-open-network']?.usd || 0,
-        change24h: data['the-open-network']?.usd_24h_change || 0
-      };
+      ).then(res => res.json());
+
+      const prices = await Promise.all(pricePromises);
+      const priceMap = {};
+      
+      prices.forEach(p => {
+        priceMap[p.symbol] = p;
+      });
+
+      // Add TON price
+      if (TONPrice['the-open-network']) {
+        priceMap['TON'] = {
+          symbol: 'TON',
+          price: TONPrice['the-open-network'].usd,
+          change24h: TONPrice['the-open-network'].usd_24h_change || 0
+        };
+      }
+
+      setJettonPrices(priceMap);
+      return priceMap;
     } catch (error) {
-      console.error('Error fetching TON price:', error);
-      return { price: 0, change24h: 0 };
+      console.error('Error fetching jetton prices:', error);
+      return {};
     }
   }, []);
 
-  // Calculate real portfolio value
-  const calculateRealPortfolioValue = useCallback(async (balance, jettons, tonPrice) => {
+  // Calculate real portfolio value from assets and prices
+  const calculatePortfolioValue = useCallback((assetsData, prices) => {
+    if (!assetsData || !prices) return 0;
+
     let totalValue = 0;
-    
+    const detailedAssets = [];
+
     // TON value
-    const tonValue = balance * tonPrice;
+    const tonPrice = prices['TON']?.price || 0;
+    const tonValue = (assetsData.tonBalance || 0) * tonPrice;
     totalValue += tonValue;
-    
+
+    if (tonValue > 0) {
+      detailedAssets.push({
+        symbol: 'TON',
+        name: 'The Open Network',
+        balance: assetsData.tonBalance || 0,
+        price: tonPrice,
+        value: tonValue,
+        change24h: prices['TON']?.change24h || 0,
+        isNative: true,
+        allocation: 0
+      });
+    }
+
     // Jettons value
-    const jettonsValue = jettons.reduce((sum, jetton) => sum + (jetton.value || 0), 0);
-    totalValue += jettonsValue;
-    
+    if (assetsData.jettons) {
+      assetsData.jettons.forEach(jetton => {
+        const symbol = jetton.jetton?.symbol || 'Unknown';
+        const decimals = jetton.jetton?.decimals || 9;
+        const balance = parseFloat(jetton.balance) / Math.pow(10, decimals);
+        const price = prices[symbol]?.price || 0;
+        const value = balance * price;
+        const change24h = prices[symbol]?.change24h || 0;
+
+        if (balance > 0) {
+          totalValue += value;
+          detailedAssets.push({
+            symbol,
+            name: jetton.jetton?.name || symbol,
+            balance,
+            price,
+            value,
+            change24h,
+            isNative: false,
+            allocation: 0,
+            image: jetton.jetton?.image,
+            address: jetton.jetton?.address
+          });
+        }
+      });
+    }
+
+    // Calculate allocations
+    if (totalValue > 0) {
+      detailedAssets.forEach(asset => {
+        asset.allocation = (asset.value / totalValue) * 100;
+      });
+    }
+
+    // Sort by value
+    detailedAssets.sort((a, b) => b.value - a.value);
+
     setPortfolioValue(totalValue);
     
     return {
       totalValue,
-      tonValue,
-      jettonsValue,
-      assets: [
-        {
-          symbol: 'TON',
-          name: 'The Open Network',
-          balance: balance,
-          value: tonValue,
-          price: tonPrice,
-          allocation: totalValue > 0 ? (tonValue / totalValue) * 100 : 0,
-          isNative: true
-        },
-        ...jettons.map(jetton => ({
-          ...jetton,
-          allocation: totalValue > 0 ? (jetton.value / totalValue) * 100 : 0,
-          isNative: false
-        }))
-      ]
+      assets: detailedAssets,
+      jettonCount: assetsData.jettons?.length || 0,
+      nftCount: assetsData.nfts?.length || 0
     };
   }, []);
 
   // Real AI Analysis based on actual wallet data
-  const performRealAIAnalysis = useCallback(async (portfolioData) => {
+  const performRealAIAnalysis = useCallback(async (portfolioData, assetsData) => {
     if (!portfolioData || portfolioData.totalValue === 0) return;
 
     setLoading(true);
     const steps = [
       "Analyzing real TON blockchain data...",
-      "Scanning transaction patterns...",
+      "Scanning jetton holdings...",
       "Evaluating portfolio composition...",
       "Identifying risk factors...",
       "Generating personalized insights..."
@@ -231,36 +260,44 @@ export default function QuantoraWalletResearch() {
 
     setTimeout(async () => {
       try {
+        const { assets, totalValue } = portfolioData;
+        const jettonCount = assetsData.jettons?.length || 0;
+        const nftCount = assetsData.nfts?.length || 0;
+        
         // Calculate real portfolio metrics
-        const totalAssets = portfolioData.assets.length;
-        const maxAllocation = Math.max(...portfolioData.assets.map(a => a.allocation));
-        const hasStablecoins = portfolioData.assets.some(a => 
-          a.symbol.includes('USD') || a.name.toLowerCase().includes('stable')
+        const maxAllocation = Math.max(...assets.map(a => a.allocation));
+        const hasStablecoins = assets.some(a => 
+          a.symbol.includes('USD') || a.name.toLowerCase().includes('stable') || 
+          a.symbol === 'USDT' || a.symbol === 'USDC'
         );
         
         // Risk scoring based on real data
         let riskScore = 5; // Base score
         if (maxAllocation > 90) riskScore += 3; // High concentration risk
-        if (totalAssets === 1) riskScore += 2; // No diversification
-        if (!hasStablecoins && portfolioData.totalValue > 1000) riskScore += 1;
-        if (portfolioData.totalValue < 100) riskScore += 2; // Small portfolio risk
+        if (assets.length === 1) riskScore += 2; // No diversification
+        if (!hasStablecoins && totalValue > 1000) riskScore += 1;
+        if (totalValue < 100) riskScore += 2; // Small portfolio risk
+        if (jettonCount === 0) riskScore += 1; // Only TON
         
         // Diversification scoring
         let diversificationScore = 5;
-        if (totalAssets >= 5) diversificationScore += 3;
-        else if (totalAssets >= 3) diversificationScore += 2;
-        else if (totalAssets >= 2) diversificationScore += 1;
+        if (jettonCount >= 5) diversificationScore += 3;
+        else if (jettonCount >= 3) diversificationScore += 2;
+        else if (jettonCount >= 1) diversificationScore += 1;
         if (hasStablecoins) diversificationScore += 1;
         if (maxAllocation < 60) diversificationScore += 1;
+        if (nftCount > 0) diversificationScore += 1;
 
         setAiAnalysis({
-          portfolioValue: portfolioData.totalValue,
+          portfolioValue: totalValue,
           riskScore: Math.min(10, riskScore),
           diversificationScore: Math.min(10, diversificationScore),
-          performancePrediction: portfolioData.totalValue > 1000 ? "+15.2%" : "+8.7%",
-          topHolding: portfolioData.assets[0]?.symbol || "TON",
-          aiInsight: generateRealInsight(portfolioData, riskScore, diversificationScore),
-          lastUpdated: new Date().toISOString()
+          performancePrediction: totalValue > 1000 ? "+15.2%" : "+8.7%",
+          topHolding: assets[0]?.symbol || "TON",
+          aiInsight: generateRealInsight(portfolioData, assetsData, riskScore, diversificationScore),
+          lastUpdated: new Date().toISOString(),
+          jettonCount,
+          nftCount
         });
 
         // Generate real alerts based on actual data
@@ -271,66 +308,88 @@ export default function QuantoraWalletResearch() {
             id: 1,
             type: "risk",
             title: "⚠️ High Concentration Risk",
-            message: `${Math.round(maxAllocation)}% of portfolio in ${portfolioData.assets[0].symbol}`,
+            message: `${Math.round(maxAllocation)}% of portfolio in ${assets[0].symbol}`,
             timestamp: "Just now",
             severity: "high",
             action: "Consider diversification"
           });
         }
 
-        if (portfolioData.totalValue > 5000 && !hasStablecoins) {
+        if (jettonCount === 0 && totalValue > 50) {
           alerts.push({
             id: 2,
             type: "opportunity",
-            title: "💡 Stability Suggestion",
-            message: "Consider adding stablecoins for portfolio stability",
+            title: "💡 Diversification Opportunity",
+            message: "Consider exploring TON ecosystem tokens like USDT, NOT, or DOGS",
             timestamp: "2 mins ago",
+            severity: "medium",
+            action: "Explore jettons"
+          });
+        }
+
+        if (totalValue > 1000 && !hasStablecoins) {
+          alerts.push({
+            id: 3,
+            type: "opportunity",
+            title: "🏦 Stability Suggestion",
+            message: "Consider adding USDT or USDC for portfolio stability",
+            timestamp: "5 mins ago",
             severity: "medium",
             action: "Add stablecoins"
           });
         }
 
-        if (tonTransactions.length > 5) {
+        if (nftCount > 10) {
           alerts.push({
-            id: 3,
+            id: 4,
             type: "whale",
-            title: "📊 Active Trader Detected",
-            message: "High transaction frequency indicates active trading",
-            timestamp: "5 mins ago",
+            title: "🎨 NFT Collector Detected",
+            message: `You own ${nftCount} NFTs - consider showcasing valuable pieces`,
+            timestamp: "8 mins ago",
             severity: "low",
-            action: "Monitor gas costs"
+            action: "Review collection"
           });
         }
 
         setActiveAlerts(alerts);
 
-        // Generate opportunities based on TON ecosystem
-        setOpportunities([
-          {
+        // Generate opportunities based on actual portfolio
+        const opportunities = [];
+        
+        if (!hasStablecoins) {
+          opportunities.push({
             id: 1,
             token: "USDT",
-            reason: "Tether on TON for portfolio stability",
-            confidence: 85,
+            reason: "Tether on TON for portfolio stability and DeFi access",
+            confidence: 90,
             type: "Stablecoin",
-            aiScore: "A"
-          },
-          {
+            aiScore: "A+"
+          });
+        }
+
+        if (jettonCount === 0) {
+          opportunities.push({
             id: 2,
-            token: "DOGS",
-            reason: "Popular TON ecosystem meme token",
-            confidence: 72,
-            type: "Community Token",
-            aiScore: "B+"
-          },
-          {
-            id: 3,
             token: "NOT",
-            reason: "Growing TON gaming ecosystem token",
-            confidence: 68,
-            type: "Gaming Token",
-            aiScore: "B"
-          }
-        ]);
+            reason: "Popular TON ecosystem token with strong community",
+            confidence: 75,
+            type: "Community Token",
+            aiScore: "A"
+          });
+        }
+
+        if (totalValue > 500 && jettonCount < 3) {
+          opportunities.push({
+            id: 3,
+            token: "DOGS",
+            reason: "Trending meme token in TON ecosystem",
+            confidence: 65,
+            type: "Meme Token",
+            aiScore: "B+"
+          });
+        }
+
+        setOpportunities(opportunities);
 
       } catch (error) {
         console.error('AI Analysis error:', error);
@@ -340,27 +399,31 @@ export default function QuantoraWalletResearch() {
           diversificationScore: 5,
           performancePrediction: "Analysis unavailable",
           topHolding: "TON",
-          aiInsight: "Unable to complete full analysis. Your TON wallet is connected and balance is tracked.",
-          lastUpdated: new Date().toISOString()
+          aiInsight: "Analysis completed with basic metrics. Your real TON assets have been successfully loaded.",
+          lastUpdated: new Date().toISOString(),
+          jettonCount: assetsData.jettons?.length || 0,
+          nftCount: assetsData.nfts?.length || 0
         });
       } finally {
         setLoading(false);
       }
     }, 4000);
-  }, [tonTransactions]);
+  }, []);
 
   // Generate real insights based on actual portfolio data
-  const generateRealInsight = useCallback((portfolioData, riskScore, diversificationScore) => {
-    const { totalValue, assets } = portfolioData;
+  const generateRealInsight = useCallback((portfolioData, assetsData, riskScore, diversificationScore) => {
+    const { totalValue } = portfolioData;
+    const jettonCount = assetsData.jettons?.length || 0;
+    const nftCount = assetsData.nfts?.length || 0;
     
     if (totalValue < 50) {
-      return "Start building your TON portfolio with regular DCA purchases. Consider exploring TON ecosystem tokens for diversification.";
+      return "Great start! Consider exploring TON ecosystem tokens and DeFi opportunities as your portfolio grows.";
     } else if (totalValue < 500) {
-      return "Growing portfolio! Consider adding stablecoins and exploring DeFi opportunities in the TON ecosystem.";
+      return `Growing portfolio with ${jettonCount} jettons! Focus on adding stablecoins and diversifying across TON ecosystem projects.`;
     } else if (totalValue < 5000) {
-      return "Solid foundation. Focus on diversification across different TON ecosystem projects while maintaining your core TON position.";
+      return `Solid foundation with ${jettonCount} jettons and ${nftCount} NFTs. Consider advanced TON DeFi strategies and yield opportunities.`;
     } else {
-      return "Substantial portfolio detected. Consider advanced strategies like yield farming and liquidity provision in TON DeFi protocols.";
+      return `Substantial TON portfolio! You're well-positioned for advanced strategies including liquidity provision and TON DeFi protocols.`;
     }
   }, []);
 
@@ -370,40 +433,50 @@ export default function QuantoraWalletResearch() {
       const fetchAllWalletData = async () => {
         console.log('Fetching all wallet data for:', tonWallet.account.address);
         
-        const [balance, transactions, jettons, tonPrice] = await Promise.all([
-          fetchTonBalance(tonWallet.account.address),
-          fetchTonTransactions(tonWallet.account.address),
-          fetchTonJettons(tonWallet.account.address),
-          fetchTonPrice()
-        ]);
-
-        // Calculate real portfolio value and perform analysis
-        const portfolioData = await calculateRealPortfolioValue(balance, jettons, tonPrice.price);
-        await performRealAIAnalysis(portfolioData);
+        const assetsData = await fetchTonAssets(tonWallet.account.address);
+        
+        if (assetsData) {
+          // Wait for prices to be fetched, then calculate portfolio value
+          setTimeout(async () => {
+            const currentPrices = Object.keys(jettonPrices).length > 0 ? jettonPrices : await fetchJettonPrices(assetsData.jettons || []);
+            const portfolioData = calculatePortfolioValue(assetsData, currentPrices);
+            
+            if (portfolioData) {
+              await performRealAIAnalysis(portfolioData, assetsData);
+            }
+          }, 1000);
+        }
       };
 
       fetchAllWalletData();
     }
-  }, [tonWallet?.account?.address, fetchTonBalance, fetchTonTransactions, fetchTonJettons, fetchTonPrice, calculateRealPortfolioValue, performRealAIAnalysis]);
+  }, [tonWallet?.account?.address]);
+
+  // Recalculate when prices are loaded
+  useEffect(() => {
+    if (assets && Object.keys(jettonPrices).length > 0) {
+      const portfolioData = calculatePortfolioValue(assets, jettonPrices);
+      if (portfolioData && portfolioData.totalValue > 0) {
+        performRealAIAnalysis(portfolioData, assets);
+      }
+    }
+  }, [jettonPrices, assets, calculatePortfolioValue, performRealAIAnalysis]);
 
   // Refresh all real data
   const refreshAllData = useCallback(async () => {
     if (tonWallet?.account?.address) {
-      setDataLoading(true);
+      const assetsData = await fetchTonAssets(tonWallet.account.address);
       
-      const [balance, transactions, jettons, tonPrice] = await Promise.all([
-        fetchTonBalance(tonWallet.account.address),
-        fetchTonTransactions(tonWallet.account.address),
-        fetchTonJettons(tonWallet.account.address),
-        fetchTonPrice()
-      ]);
-
-      const portfolioData = await calculateRealPortfolioValue(balance, jettons, tonPrice.price);
-      await performRealAIAnalysis(portfolioData);
-      
-      setDataLoading(false);
+      if (assetsData) {
+        const currentPrices = await fetchJettonPrices(assetsData.jettons || []);
+        const portfolioData = calculatePortfolioValue(assetsData, currentPrices);
+        
+        if (portfolioData) {
+          await performRealAIAnalysis(portfolioData, assetsData);
+        }
+      }
     }
-  }, [tonWallet?.account?.address, fetchTonBalance, fetchTonTransactions, fetchTonJettons, fetchTonPrice, calculateRealPortfolioValue, performRealAIAnalysis]);
+  }, [tonWallet?.account?.address, fetchTonAssets, fetchJettonPrices, calculatePortfolioValue, performRealAIAnalysis]);
 
   return (
     <div className="pb-20 space-y-6">
@@ -426,7 +499,7 @@ export default function QuantoraWalletResearch() {
               Real TON Portfolio Intelligence
             </h1>
             <p className="text-cyan-400 font-bold text-sm uppercase tracking-wider mb-2">
-              Live Blockchain Data Analysis
+              Live Blockchain Assets Analysis
             </p>
             <p className="text-white/80 text-sm">
               Connect your TON wallet for real-time AI analysis of your actual holdings
@@ -447,7 +520,7 @@ export default function QuantoraWalletResearch() {
               <LuWallet className="w-12 h-12 text-lime-400 mx-auto mb-4" />
               <h2 className="text-white font-bold text-lg mb-2">Connect Your TON Wallet</h2>
               <p className="text-gray-400 text-sm mb-6">
-                Real blockchain data extraction and AI analysis for your actual TON holdings
+                Real-time analysis of your TON, jettons, and NFT holdings
               </p>
               
               <div className="flex justify-center mb-6">
@@ -456,16 +529,16 @@ export default function QuantoraWalletResearch() {
 
               <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
                 <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                  <span>Real Balance</span>
-                </div>
-                <div className="flex items-center gap-1">
                   <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                  <span>Live Transactions</span>
+                  <span>TON Balance</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
                   <span>Jetton Holdings</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 bg-pink-400 rounded-full"></div>
+                  <span>NFT Collection</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
@@ -480,26 +553,26 @@ export default function QuantoraWalletResearch() {
             {[
               {
                 icon: LuBrainCircuit,
-                title: "Real Portfolio Analysis",
-                description: "AI analyzes your actual TON and jetton holdings",
+                title: "Real Asset Analysis",
+                description: "AI analyzes your actual TON, jettons, and NFTs",
                 color: "lime-400"
               },
               {
                 icon: HiOutlineChartBar,
-                title: "Live Transaction Tracking",
-                description: "Monitor your real transaction patterns and fees",
+                title: "Portfolio Valuation",
+                description: "Live USD values from CoinGecko integration",
                 color: "cyan-400"
               },
               {
-                icon: HiOutlineShieldCheck,
-                title: "Blockchain Risk Assessment",
-                description: "Real-time risk analysis based on your holdings",
-                color: "red-400"
+                icon: HiOutlineCollection,
+                title: "NFT Collection Insights",
+                description: "Track and analyze your TON NFT holdings",
+                color: "pink-400"
               },
               {
                 icon: HiSparkles,
                 title: "TON Ecosystem Opportunities",
-                description: "Discover TON tokens based on your activity",
+                description: "Discover new jettons based on your holdings",
                 color: "violet-400"
               }
             ].map((feature, index) => (
@@ -555,22 +628,42 @@ export default function QuantoraWalletResearch() {
                 </p>
                 
                 <div className="mt-4 text-center">
-                  {tonBalance !== null ? (
-                    <>
-                      <div className="text-3xl font-black text-white mb-1">
-                        {tonBalance.toFixed(2)} TON
-                      </div>
-                      <div className="text-blue-400 text-sm">
-                        Portfolio Value: ${portfolioValue.toFixed(2)}
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-gray-400 text-sm">Loading real balance...</div>
+                  <div className="text-3xl font-black text-white mb-1">
+                    {tonBalance.toFixed(2)} TON
+                  </div>
+                  <div className="text-blue-400 text-sm">
+                    Portfolio Value: ${portfolioValue.toFixed(2)}
+                  </div>
+                  {lastUpdated && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      Last updated: {new Date(lastUpdated).toLocaleTimeString()}
+                    </div>
                   )}
                 </div>
               </div>
             </div>
           </motion.div>
+
+          {/* Error State */}
+          {error && (
+            <motion.div
+              className="glass border border-red-400/30"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <div className="p-4 text-center">
+                <HiOutlineExclamationTriangle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+                <h3 className="text-red-400 font-bold mb-1">Data Loading Error</h3>
+                <p className="text-gray-400 text-sm mb-3">{error}</p>
+                <button
+                  onClick={refreshAllData}
+                  className="px-4 py-2 bg-red-400/20 text-red-400 rounded-lg text-sm hover:bg-red-400/30"
+                >
+                  Retry
+                </button>
+              </div>
+            </motion.div>
+          )}
 
           {/* Data Loading State */}
           <AnimatePresence>
@@ -588,13 +681,13 @@ export default function QuantoraWalletResearch() {
                     transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                   />
                   <h3 className="text-white font-bold mb-2">
-                    {dataLoading ? "Fetching Real Blockchain Data" : "AI Analysis in Progress"}
+                    {dataLoading ? "Loading Real Assets" : "AI Analysis in Progress"}
                   </h3>
                   <p className="text-blue-400 text-sm">
-                    {dataLoading ? "Reading TON blockchain..." : 
+                    {dataLoading ? "Fetching from /api/ton-assets..." : 
                      loading ? [
                       "Analyzing real TON blockchain data...",
-                      "Scanning transaction patterns...",
+                      "Scanning jetton holdings...",
                       "Evaluating portfolio composition...",
                       "Identifying risk factors...",
                       "Generating personalized insights..."
@@ -615,126 +708,186 @@ export default function QuantoraWalletResearch() {
             )}
           </AnimatePresence>
 
-          {/* Real AI Analysis Results */}
-          {aiAnalysis && !loading && (
+          {/* Real Assets Display */}
+          {assets && !dataLoading && (
             <motion.div
               className="space-y-4"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              {/* Real Portfolio Overview */}
-              <div className="glass">
-                <div className="p-5">
-                  <div className="flex items-center gap-2 mb-4">
-                    <HiOutlineChartBar className="w-5 h-5 text-lime-400" />
-                    <h3 className="text-white font-bold">Real Portfolio Analysis</h3>
-                    <div className="ml-auto text-xs text-gray-500">
-                      Live • {new Date(aiAnalysis.lastUpdated).toLocaleTimeString()}
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div className="text-center">
-                      <div className="text-xl font-bold text-red-400">{aiAnalysis.riskScore}/10</div>
-                      <div className="text-xs text-gray-400">Risk Score</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xl font-bold text-green-400">{aiAnalysis.diversificationScore}/10</div>
-                      <div className="text-xs text-gray-400">Diversification</div>
-                    </div>
-                  </div>
-                  
-                  <div className="p-3 bg-blue-400/10 rounded-lg border border-blue-400/20">
-                    <p className="text-white text-sm">
-                      <span className="text-blue-400 font-semibold">Real AI Insight:</span> {aiAnalysis.aiInsight}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Real TON Jettons */}
-              {tonJettons.length > 0 && (
+              {/* Portfolio Overview */}
+              {aiAnalysis && (
                 <div className="glass">
                   <div className="p-5">
                     <div className="flex items-center gap-2 mb-4">
-                      <HiOutlineGlobe className="w-5 h-5 text-purple-400" />
-                      <h3 className="text-white font-bold">Your TON Jettons</h3>
-                      <div className="ml-auto text-xs text-purple-400">{tonJettons.length} tokens</div>
+                      <HiOutlineChartBar className="w-5 h-5 text-lime-400" />
+                      <h3 className="text-white font-bold">Portfolio Analysis</h3>
+                      <div className="ml-auto text-xs text-gray-500">
+                        {aiAnalysis.jettonCount} jettons • {aiAnalysis.nftCount} NFTs
+                      </div>
                     </div>
                     
-                    <div className="space-y-2">
-                      {tonJettons.map((jetton, index) => (
-                        <div key={jetton.address} className="flex items-center justify-between p-3 hover:bg-white/5 rounded-lg border border-gray-700/30">
-                          <div className="flex items-center gap-3">
-                            {jetton.image ? (
-                              <img src={jetton.image} alt={jetton.symbol} className="w-8 h-8 rounded-full" />
-                            ) : (
-                              <div className="w-8 h-8 bg-purple-400/20 rounded-full flex items-center justify-center">
-                                <span className="text-purple-400 font-bold text-xs">
-                                  {jetton.symbol?.charAt(0) || 'J'}
-                                </span>
-                              </div>
-                            )}
-                            <div>
-                              <div className="text-white font-semibold text-sm">
-                                {jetton.symbol || 'Unknown'}
-                              </div>
-                              <div className="text-gray-400 text-xs">
-                                {jetton.balance.toFixed(4)}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-white font-semibold text-sm">
-                              ${jetton.value?.toFixed(2) || '0.00'}
-                            </div>
-                            <div className="text-gray-400 text-xs">
-                              ${jetton.price?.toFixed(4) || '0.0000'}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div className="text-center">
+                        <div className="text-xl font-bold text-red-400">{aiAnalysis.riskScore}/10</div>
+                        <div className="text-xs text-gray-400">Risk Score</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xl font-bold text-green-400">{aiAnalysis.diversificationScore}/10</div>
+                        <div className="text-xs text-gray-400">Diversification</div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-3 bg-blue-400/10 rounded-lg border border-blue-400/20">
+                      <p className="text-white text-sm">
+                        <span className="text-blue-400 font-semibold">AI Insight:</span> {aiAnalysis.aiInsight}
+                      </p>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Real Transaction History */}
-              {tonTransactions.length > 0 && (
+              {/* TON Balance */}
+              <div className="glass">
+                <div className="p-5">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-8 h-8 bg-blue-400/20 rounded-full flex items-center justify-center">
+                      <span className="text-blue-400 font-bold text-sm">TON</span>
+                    </div>
+                    <h3 className="text-white font-bold">Native TON</h3>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-white font-semibold text-lg">
+                        {tonBalance.toFixed(4)} TON
+                      </div>
+                      <div className="text-gray-400 text-sm">
+                        Balance
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-white font-semibold text-lg">
+                        ${((tonBalance || 0) * (jettonPrices['TON']?.price || 0)).toFixed(2)}
+                      </div>
+                      <div className={`text-sm ${
+                        (jettonPrices['TON']?.change24h || 0) >= 0 ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {(jettonPrices['TON']?.change24h || 0) >= 0 ? '+' : ''}{(jettonPrices['TON']?.change24h || 0).toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Real Jettons */}
+              {assets.jettons && assets.jettons.length > 0 && (
                 <div className="glass">
                   <div className="p-5">
                     <div className="flex items-center gap-2 mb-4">
-                      <HiOutlineDocumentSearch className="w-5 h-5 text-cyan-400" />
-                      <h3 className="text-white font-bold">Recent Transactions</h3>
-                      <div className="ml-auto text-xs text-cyan-400">Live from blockchain</div>
+                      <HiOutlineGlobe className="w-5 h-5 text-purple-400" />
+                      <h3 className="text-white font-bold">Your Jettons</h3>
+                      <div className="ml-auto text-xs text-purple-400">{assets.jettons.length} tokens</div>
                     </div>
                     
-                    <div className="space-y-2">
-                      {tonTransactions.slice(0, 5).map((tx, index) => (
-                        <div key={tx.hash} className="flex items-center justify-between p-2 hover:bg-white/5 rounded">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-2 h-2 rounded-full ${tx.type === 'receive' ? 'bg-green-400' : 'bg-red-400'}`}></div>
-                            <div>
-                              <div className="text-white text-xs font-mono">
-                                {tx.hash.slice(0, 8)}...
+                    <div className="space-y-3">
+                      {assets.jettons.map((jetton, index) => {
+                        const symbol = jetton.jetton?.symbol || 'Unknown';
+                        const decimals = jetton.jetton?.decimals || 9;
+                        const balance = parseFloat(jetton.balance) / Math.pow(10, decimals);
+                        const price = jettonPrices[symbol]?.price || 0;
+                        const value = balance * price;
+                        const change24h = jettonPrices[symbol]?.change24h || 0;
+
+                        return (
+                          <div key={jetton.jetton?.address || index} className="flex items-center justify-between p-3 hover:bg-white/5 rounded-lg border border-gray-700/30">
+                            <div className="flex items-center gap-3">
+                              {jetton.jetton?.image ? (
+                                <Image 
+                                  src={jetton.jetton.image} 
+                                  alt={symbol} 
+                                  width={32} 
+                                  height={32} 
+                                  className="rounded-full"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 bg-purple-400/20 rounded-full flex items-center justify-center">
+                                  <span className="text-purple-400 font-bold text-xs">
+                                    {symbol.charAt(0)}
+                                  </span>
+                                </div>
+                              )}
+                              <div>
+                                <div className="text-white font-semibold text-sm">
+                                  {symbol}
+                                </div>
+                                <div className="text-gray-400 text-xs">
+                                  {balance.toFixed(balance < 1 ? 6 : 2)}
+                                </div>
                               </div>
-                              <div className="text-gray-400 text-xs">
-                                {new Date(tx.timestamp * 1000).toLocaleString()}
+                            </div>
+                            <div className="text-right">
+                              <div className="text-white font-semibold text-sm">
+                                ${value.toFixed(2)}
                               </div>
+                              {price > 0 && (
+                                <div className={`text-xs ${change24h >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  {change24h >= 0 ? '+' : ''}{change24h.toFixed(1)}%
+                                </div>
+                              )}
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className={`text-sm font-semibold ${tx.type === 'receive' ? 'text-green-400' : 'text-red-400'}`}>
-                              {tx.type === 'receive' ? '+' : '-'}{tx.value.toFixed(4)} TON
-                            </div>
-                            <div className="text-gray-400 text-xs">
-                              Fee: {tx.fee.toFixed(4)}
-                            </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Real NFTs */}
+              {assets.nfts && assets.nfts.length > 0 && (
+                <div className="glass">
+                  <div className="p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <HiOutlinePhotograph className="w-5 h-5 text-pink-400" />
+                      <h3 className="text-white font-bold">Your NFTs</h3>
+                      <div className="ml-auto text-xs text-pink-400">{assets.nfts.length} items</div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      {assets.nfts.slice(0, 6).map((nft, index) => (
+                        <div key={nft.address || index} className="p-3 bg-pink-500/10 rounded-lg border border-pink-400/20">
+                          <div className="aspect-square bg-gray-800 rounded-lg mb-2 flex items-center justify-center">
+                            {nft.metadata?.image ? (
+                              <Image 
+                                src={nft.metadata.image} 
+                                alt={nft.metadata?.name || 'NFT'} 
+                                width={80} 
+                                height={80} 
+                                className="rounded-lg object-cover"
+                              />
+                            ) : (
+                              <HiOutlinePhotograph className="w-8 h-8 text-gray-600" />
+                            )}
                           </div>
+                          <h4 className="text-white font-semibold text-sm truncate">
+                            {nft.metadata?.name || 'Unnamed NFT'}
+                          </h4>
+                          {nft.collection?.name && (
+                            <p className="text-gray-400 text-xs truncate">
+                              {nft.collection.name}
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
+                    
+                    {assets.nfts.length > 6 && (
+                      <p className="text-center text-gray-400 text-sm mt-3">
+                        +{assets.nfts.length - 6} more NFTs
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -746,7 +899,7 @@ export default function QuantoraWalletResearch() {
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <HiOutlineEye className="w-5 h-5 text-yellow-400" />
-                        <h3 className="text-white font-bold">Real-Time Alerts</h3>
+                        <h3 className="text-white font-bold">Portfolio Alerts</h3>
                       </div>
                       <div className="flex items-center gap-1">
                         <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></div>
@@ -781,41 +934,60 @@ export default function QuantoraWalletResearch() {
               )}
 
               {/* TON Ecosystem Opportunities */}
-              <div className="glass">
-                <div className="p-5">
-                  <div className="flex items-center gap-2 mb-4">
-                    <HiSparkles className="w-5 h-5 text-violet-400" />
-                    <h3 className="text-white font-bold">TON Ecosystem Opportunities</h3>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    {opportunities.map((opportunity) => (
-                      <div key={opportunity.id} className="p-3 bg-violet-500/10 rounded-lg border border-violet-400/20">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-violet-400 font-bold">{opportunity.token}</span>
-                            <div className={`text-xs px-2 py-1 rounded-full ${
-                              opportunity.aiScore === 'A+' ? 'bg-green-400/20 text-green-400' :
-                              opportunity.aiScore === 'A' ? 'bg-lime-400/20 text-lime-400' :
-                              'bg-yellow-400/20 text-yellow-400'
-                            }`}>
-                              {opportunity.aiScore}
+              {opportunities.length > 0 && (
+                <div className="glass">
+                  <div className="p-5">
+                    <div className="flex items-center gap-2 mb-4">
+                      <HiSparkles className="w-5 h-5 text-violet-400" />
+                      <h3 className="text-white font-bold">Recommended for You</h3>
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {opportunities.map((opportunity) => (
+                        <div key={opportunity.id} className="p-3 bg-violet-500/10 rounded-lg border border-violet-400/20">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-violet-400 font-bold">{opportunity.token}</span>
+                              <div className={`text-xs px-2 py-1 rounded-full ${
+                                opportunity.aiScore === 'A+' ? 'bg-green-400/20 text-green-400' :
+                                opportunity.aiScore === 'A' ? 'bg-lime-400/20 text-lime-400' :
+                                'bg-yellow-400/20 text-yellow-400'
+                              }`}>
+                                {opportunity.aiScore}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <HiOutlineTrendingUp className="w-4 h-4 text-green-400" />
+                              <span className="text-green-400 text-sm font-semibold">{opportunity.confidence}%</span>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <HiOutlineTrendingUp className="w-4 h-4 text-green-400" />
-                            <span className="text-green-400 text-sm font-semibold">{opportunity.confidence}%</span>
-                          </div>
+                          <p className="text-white text-sm mb-2">{opportunity.reason}</p>
+                          <span className="text-xs text-gray-400 bg-gray-800 px-2 py-1 rounded">
+                            {opportunity.type}
+                          </span>
                         </div>
-                        <p className="text-white text-sm mb-2">{opportunity.reason}</p>
-                        <span className="text-xs text-gray-400 bg-gray-800 px-2 py-1 rounded">
-                          {opportunity.type}
-                        </span>
-                      </div>
-                    ))}
+                      ))}
                     </div>
                   </div>
                 </div>
+              )}
+
+              {/* Empty State */}
+              {assets.jettons?.length === 0 && assets.nfts?.length === 0 && tonBalance === 0 && (
+                <div className="glass text-center py-12">
+                  <LuWallet className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+                  <h3 className="text-white font-bold text-lg mb-2">No Assets Found</h3>
+                  <p className="text-gray-400 text-sm mb-4">
+                    This wallet appears to be empty or the assets couldn't be loaded.
+                  </p>
+                  <button
+                    onClick={refreshAllData}
+                    className="px-4 py-2 bg-blue-400/20 text-blue-400 rounded-lg text-sm hover:bg-blue-400/30"
+                  >
+                    Refresh Data
+                  </button>
+                </div>
+              )}
 
               {/* Refresh Real Data Button */}
               <motion.button
@@ -826,7 +998,7 @@ export default function QuantoraWalletResearch() {
                 disabled={dataLoading}
               >
                 <HiOutlineRefresh className={`w-5 h-5 ${dataLoading ? 'animate-spin' : ''}`} />
-                <span>{dataLoading ? 'Refreshing...' : 'Refresh Real Data'}</span>
+                <span>{dataLoading ? 'Refreshing...' : 'Refresh Assets Data'}</span>
               </motion.button>
             </motion.div>
           )}

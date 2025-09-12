@@ -1,39 +1,45 @@
-export default async function handler(req, res) {
-    const { address } = req.query;
+export async function GET(req) {
+    const { searchParams } = new URL(req.url)
+    const address = searchParams.get("address")
   
     if (!address) {
-      return res.status(400).json({ error: "Missing wallet address" });
+      return new Response(
+        JSON.stringify({ error: "Missing wallet address" }),
+        { status: 400 }
+      )
     }
   
     try {
-      // Fetch Jettons (fungible tokens)
-      const jettonsRes = await fetch(
-        `https://tonapi.io/v2/accounts/${address}/jettons`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.TONAPI_KEY}`, // get free key from tonapi.io
-          },
-        }
-      );
-      const jettons = await jettonsRes.json();
+      // Call Toncenter API
+      const resp = await fetch(
+        `https://toncenter.com/api/v2/getAddressInformation?address=${address}`
+      )
+      const data = await resp.json()
   
-      // Fetch NFTs
-      const nftsRes = await fetch(
-        `https://tonapi.io/v2/accounts/${address}/nfts?limit=50`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.TONAPI_KEY}`,
-          },
-        }
-      );
-      const nfts = await nftsRes.json();
+      if (!data.ok) {
+        return new Response(
+          JSON.stringify({ error: "Invalid response from Toncenter" }),
+          { status: 400 }
+        )
+      }
   
-      res.status(200).json({
-        jettons: jettons.balances || [],
-        nfts: nfts.nft_items || [],
-      });
+      const tonBalance = data.result.balance
+        ? parseInt(data.result.balance, 10) / 1e9
+        : 0
+  
+      return new Response(
+        JSON.stringify({
+          tonBalance,
+          accountState: data.result.state,
+          accountType: data.result.account_type,
+        }),
+        { status: 200 }
+      )
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      return new Response(
+        JSON.stringify({ error: err.message }),
+        { status: 500 }
+      )
     }
   }
   
