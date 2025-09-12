@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { useStore } from '@/lib/storage';
 import { useTelegram } from '@/lib/useTelegram';
 import CustomLoader from '@/components/Loader';
+import CyberpunkDataHeist from '@/components/CyberpunkDataHeist';
 import BottomNav from '@/components/BottomNav';
 import CoinAgent from '@/components/CoinAgent';
 import Agent from '@/components/Agent';
@@ -23,7 +24,6 @@ import {
 } from 'react-icons/hi';
 import { LuBrainCircuit } from "react-icons/lu";
 import { SquareCheckBig, UserPlus, History, Check, CheckCircle } from 'lucide-react';
-import CyberpunkDataHeist from '@/components/CyberpunkDataHeist';
 
 // Premium Intro Carousel Component
 const QuantoraIntroCarousel = ({ user, onComplete }) => {
@@ -175,16 +175,6 @@ const QuantoraIntroCarousel = ({ user, onComplete }) => {
             exit={{ opacity: 0, x: -100 }}
             transition={{ duration: 0.6, type: "spring", bounce: 0.3 }}
           >
-            {/* Slide Icon */}
-            <motion.div
-              className={`w-24 h-24 hidden mx-auto mb-8 bg-gradient-to-r ${slides[currentSlide].gradient} rounded-3xl flex items-center justify-center shadow-2xl`}
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: "spring", bounce: 0.5 }}
-            >
-              {/* <slides[currentSlide].icon className="w-12 h-12 text-white" /> */}
-            </motion.div>
-
             {/* Slide Content */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -194,9 +184,6 @@ const QuantoraIntroCarousel = ({ user, onComplete }) => {
               <h1 className="text-2xl font-bold text-white mb-3 tracking-normal">
                 {slides[currentSlide].title}
               </h1>
-              <p className={`text-xl hidden font-bold text-${slides[currentSlide].color} mb-4 uppercase tracking-wider`}>
-                {slides[currentSlide].subtitle}
-              </p>
               <p className="text-white/80 text-sm text-balance leading-relaxed mb-8">
                 {slides[currentSlide].description}
               </p>
@@ -229,9 +216,10 @@ const QuantoraIntroCarousel = ({ user, onComplete }) => {
                   ))}
                 </div>
               )}
+
               {/* Slide 2: AI Agents */}
               {currentSlide === 1 && (
-                <div className="grid grid-cols-1 gap-1 ">
+                <div className="grid grid-cols-1 gap-1">
                   {slides[1].agents.map((agent, index) => (
                     <motion.div
                       key={agent}
@@ -249,21 +237,9 @@ const QuantoraIntroCarousel = ({ user, onComplete }) => {
                 </div>
               )}
 
-              {/* Slide 3: Features */}
+              {/* Slide 3: Get Started Button */}
               {currentSlide === 2 && (
-                <div className="grid grid-cols-1 gap-3 ">
-                  {/* {slides[2].features.map((feature, index) => (
-                    <motion.div
-                      key={feature}
-                      className="glass p-4 rounded-xl -mt-5 text-center"
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: 0.8 + index * 0.1, type: "spring" }}
-                    >
-                      <HiSparkles className={`w-6 h-6 text-${slides[2].color} mx-auto mb-2`} />
-                      <span className="text-white text-sm font-semibold">{feature}</span>
-                    </motion.div>
-                  ))} */}
+                <div className="grid grid-cols-1 gap-3">
                   <motion.button
                     onClick={handleSkip}
                     className="px-4 flex w-[75%] items-center gap-3 justify-center mx-auto glass-button py-2 bg-white/10 backdrop-blur-sm rounded-xl text-white/80 text-sm font-semibold hover:bg-white/20 transition-all"
@@ -308,30 +284,6 @@ const QuantoraIntroCarousel = ({ user, onComplete }) => {
           >
             <HiArrowRight className="w-5 h-5 transform rotate-180" />
           </motion.button>
-
-          {currentSlide === slides.length - 1 ? (
-            <motion.button
-              onClick={handleComplete}
-              className={`px-8 py-4 hidden absolute glass bg-gradient-to-r ${slides[currentSlide].gradient} rounded-2xl text-white font-black text-lg shadow-2xl`}
-              whileHover={{ scale: 1.05, y: -2 }}
-              whileTap={{ scale: 0.95 }}
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", bounce: 0.5 }}
-            >
-              Get Started
-            </motion.button>
-          ) : (
-            <motion.button
-              onClick={nextSlide}
-              className={`px-6 py-3 hidden bg-gradient-to-r ${slides[currentSlide].gradient} rounded-xl text-white font-bold flex items-center gap-2 shadow-xl`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <span>Next</span>
-              <HiArrowRight className="w-4 h-4" />
-            </motion.button>
-          )}
 
           <motion.button
             onClick={nextSlide}
@@ -544,6 +496,7 @@ const DebugPanel = ({ user, error, webApp }) => {
 function TelegramMiniApp() {
   const [activeTab, setActiveTab] = useState('home');
   const [showLoader, setShowLoader] = useState(true);
+  const [showCyberHeist, setShowCyberHeist] = useState(false);
   const [showIntro, setShowIntro] = useState(false);
   
   const { 
@@ -567,10 +520,14 @@ function TelegramMiniApp() {
   
   const router = useRouter();
 
-  // Check if intro should be shown
+  // Check if cyberpunk heist and intro should be shown
   useEffect(() => {
+    const heistCompleted = localStorage.getItem('quantora_heist_completed');
     const introCompleted = localStorage.getItem('quantora_intro_completed');
-    if (!introCompleted) {
+    
+    if (!heistCompleted) {
+      setShowCyberHeist(true);
+    } else if (!introCompleted) {
       setShowIntro(true);
     }
   }, []);
@@ -608,6 +565,18 @@ function TelegramMiniApp() {
     router.push(`/?tab=${tab}`, { scroll: false });
   }, [router, hapticFeedback]);
 
+  // Handle cyberpunk heist completion
+  const handleCyberHeistComplete = () => {
+    localStorage.setItem('quantora_heist_completed', 'true');
+    setShowCyberHeist(false);
+    
+    // Check if intro should be shown next
+    const introCompleted = localStorage.getItem('quantora_intro_completed');
+    if (!introCompleted) {
+      setShowIntro(true);
+    }
+  };
+
   const TopNav = () => (
     <div>
       <div className="w-full flex justify-between items-center py-4 px-2">
@@ -625,7 +594,6 @@ function TelegramMiniApp() {
 
   const renderHomeContent = () => (
     <div className="space-y-6">
-      <CyberpunkDataHeist/>
       <SocialTask />
       <NavigationButtons
         setActiveTab={handleTabNavigation}
@@ -671,7 +639,16 @@ function TelegramMiniApp() {
     return <CustomLoader />;
   }
 
-  // Show intro carousel if not completed
+  // Show cyberpunk data heist first
+  if (showCyberHeist && user) {
+    return (
+      <CyberpunkDataHeist 
+        onComplete={handleCyberHeistComplete} 
+      />
+    );
+  }
+
+  // Show intro carousel if cyberpunk heist is done but intro not completed
   if (showIntro && user) {
     return (
       <QuantoraIntroCarousel 
