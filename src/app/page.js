@@ -496,7 +496,7 @@ const DebugPanel = ({ user, error, webApp }) => {
 function TelegramMiniApp() {
   const [activeTab, setActiveTab] = useState('home');
   const [showLoader, setShowLoader] = useState(true);
-  const [showCyberHeist, setShowCyberHeist] = useState(false);
+  const [showCyberHeist, setShowCyberHeist] = useState(true); // Always show on load
   const [showIntro, setShowIntro] = useState(false);
   
   const { 
@@ -520,17 +520,21 @@ function TelegramMiniApp() {
   
   const router = useRouter();
 
-  // Check if cyberpunk heist and intro should be shown
+  // Always show cyberpunk heist on page load/reload
   useEffect(() => {
-    const heistCompleted = localStorage.getItem('quantora_heist_completed');
-    const introCompleted = localStorage.getItem('quantora_intro_completed');
+    // Always set showCyberHeist to true on component mount (page load/reload)
+    setShowCyberHeist(true);
     
-    if (!heistCompleted) {
-      setShowCyberHeist(true);
-    } else if (!introCompleted) {
+    // Only check intro completion status after cyberpunk heist
+    const introCompleted = localStorage.getItem('quantora_intro_completed');
+    if (introCompleted) {
+      // If intro was completed before, we'll skip it after cyberpunk heist
+      setShowIntro(false);
+    } else {
+      // If intro was never completed, we'll show it after cyberpunk heist
       setShowIntro(true);
     }
-  }, []);
+  }, []); // Empty dependency array means this runs only on mount (page load/reload)
 
   // Show loader for 1.5 seconds
   useEffect(() => {
@@ -567,14 +571,14 @@ function TelegramMiniApp() {
 
   // Handle cyberpunk heist completion
   const handleCyberHeistComplete = () => {
-    localStorage.setItem('quantora_heist_completed', 'true');
     setShowCyberHeist(false);
     
-    // Check if intro should be shown next
+    // Check if intro should be shown next (only for first-time users)
     const introCompleted = localStorage.getItem('quantora_intro_completed');
     if (!introCompleted) {
       setShowIntro(true);
     }
+    // If intro was already completed, go directly to main app
   };
 
   const TopNav = () => (
@@ -639,7 +643,7 @@ function TelegramMiniApp() {
     return <CustomLoader />;
   }
 
-  // Show cyberpunk data heist first
+  // Always show cyberpunk data heist after loader
   if (showCyberHeist && user) {
     return (
       <CyberpunkDataHeist 
@@ -648,7 +652,7 @@ function TelegramMiniApp() {
     );
   }
 
-  // Show intro carousel if cyberpunk heist is done but intro not completed
+  // Show intro carousel only if user hasn't completed it before
   if (showIntro && user) {
     return (
       <QuantoraIntroCarousel 
