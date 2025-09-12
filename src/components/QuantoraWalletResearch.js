@@ -486,22 +486,15 @@ export default function QuantoraWalletResearch() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="p-6 bg-gradient-to-r from-lime-400/20 via-cyan-400/15 to-violet-400/20 rounded-2xl">
+        <div className="">
           <div className="text-center">
-            <motion.div
-              className="w-16 h-16 bg-gradient-to-r from-lime-400 to-cyan-400 rounded-full flex items-center justify-center mx-auto mb-4"
-              animate={{ rotate: [0, 360] }}
-              transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-            >
-              <LuBrainCircuit className="w-8 h-8 text-white" />
-            </motion.div>
-            <h1 className="text-2xl font-black tektur text-white mb-2">
+            {/* <h1 className="text-2xl font-semibold text-white mb-2">
               Real TON Portfolio Intelligence
-            </h1>
-            <p className="text-cyan-400 font-bold text-sm uppercase tracking-wider mb-2">
+            </h1> */}
+            <p className="text-cyan-400 font-bold text-sm uppercase mb-2">
               Live Blockchain Assets Analysis
             </p>
-            <p className="text-white/80 text-sm">
+            <p className="text-white/80 text-xs text-balance">
               Connect your TON wallet for real-time AI analysis of your actual holdings
             </p>
           </div>
@@ -515,11 +508,11 @@ export default function QuantoraWalletResearch() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         >
-          <div className="glass">
+          <div className="glass glass-p">
             <div className="p-6 text-center">
               <LuWallet className="w-12 h-12 text-lime-400 mx-auto mb-4" />
               <h2 className="text-white font-bold text-lg mb-2">Connect Your TON Wallet</h2>
-              <p className="text-gray-400 text-sm mb-6">
+              <p className="text-gray-400 text-sm mb-6 text-balance">
                 Real-time analysis of your TON, jettons, and NFT holdings
               </p>
               
