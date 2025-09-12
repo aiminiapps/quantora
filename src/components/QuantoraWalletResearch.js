@@ -4,6 +4,11 @@ import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TonConnectButton, useTonWallet, useTonConnectUI } from '@tonconnect/ui-react';
 import { formatUnits } from 'viem';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { WagmiProvider } from 'wagmi'
+import { createWeb3Modal } from '@web3modal/wagmi/react'
+import { config, projectId, chains } from '../lib/wagmi'
+import { TonConnectUIProvider } from '@tonconnect/ui-react'
 import { 
   HiOutlineShieldCheck,
   HiOutlineLightningBolt,
