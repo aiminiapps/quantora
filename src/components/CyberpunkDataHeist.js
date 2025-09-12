@@ -211,11 +211,11 @@ const CyberpunkDataHeist = ({ onComplete }) => {
       </div>
 
       {/* Main Mobile Terminal Interface */}
-      <div className="relative z-10 flex items-center justify-center min-h-screen p-3">
+      <div className="relative z-10 flex items-center justify-center min-h-screen px-3">
         <motion.div
           className={`
             bg-black/85 border border-${hackingStages[hackingStage]?.color || 'lime-400'}/60
-            rounded-2xl p-6 w-full max-w-sm backdrop-blur-sm
+            rounded-2xl p-4 w-full max-w-sm backdrop-blur-sm
           `}
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
