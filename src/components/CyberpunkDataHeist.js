@@ -364,30 +364,6 @@ const CyberpunkDataHeist = ({ onComplete }) => {
                 ))}
               </div>
             </div>
-
-            {/* Creative Floating Elements */}
-            <div className="relative">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <motion.div
-                  key={i}
-                  className={`absolute w-1 h-1 bg-${['lime-400', 'cyan-400', 'yellow-400', 'purple-400'][i % 4]} rounded-full opacity-40`}
-                  style={{
-                    left: `${Math.random() * 100}%`,
-                    top: `${Math.random() * 20 - 10}px`
-                  }}
-                  animate={{
-                    y: [0, -20, 0],
-                    opacity: [0.4, 0.8, 0.4],
-                    scale: [1, 1.5, 1]
-                  }}
-                  transition={{
-                    duration: 2 + Math.random() * 2,
-                    repeat: Infinity,
-                    delay: Math.random() * 2
-                  }}
-                />
-              ))}
-            </div>
           </div>
 
           {/* Mobile Warning Message */}
