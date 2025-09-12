@@ -221,16 +221,6 @@ const CyberpunkDataHeist = ({ onComplete }) => {
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.6, type: "spring", bounce: 0.3 }}
         >
-          {/* Mobile Terminal Header */}
-          <div className="flex items-center justify-between mb-6 pb-3 border-b border-lime-400/20">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-red-500/80 rounded-full animate-pulse" />
-              <div className="w-2 h-2 bg-yellow-500/80 rounded-full animate-pulse" />
-              <div className="w-2 h-2 bg-green-500/80 rounded-full animate-pulse" />
-            </div>
-            <div className="text-lime-400/80 text-xs">QTRA_BREACH_v2.1</div>
-          </div>
-
           {/* Mobile-Optimized ASCII Art Logo */}
           <div className="text-center mb-6">
             <motion.pre 
