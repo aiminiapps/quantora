@@ -24,35 +24,35 @@ const CyberpunkDataHeist = ({ onComplete }) => {
       description: "Bypassing institutional security...",
       progress: 35,
       color: "cyan-400", 
-      delay: 1500
+      delay: 700
     },
     {
       text: "ACCESSING WHALE DATABASES",
       description: "Extracting smart money patterns...",
       progress: 55,
       color: "yellow-400",
-      delay: 1000
+      delay: 500
     },
     {
       text: "DOWNLOADING MARKET INTELLIGENCE",
       description: "Acquiring institutional data...",
       progress: 75,
       color: "orange-400",
-      delay: 1200
+      delay: 400
     },
     {
       text: "INSTALLING AI NEURAL INTERFACES",
       description: "Calibrating research algorithms...",
       progress: 90,
       color: "purple-400",
-      delay: 1000
+      delay: 300
     },
     {
       text: "BREACH COMPLETE WELCOME AGENT",
       description: "Access granted to the resistance...",
       progress: 100,
       color: "green-400",
-      delay: 1500
+      delay: 500
     }
   ];
 
