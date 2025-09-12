@@ -542,7 +542,7 @@ export default function QuantoraWalletResearch() {
           </div>
 
           {/* Features Preview */}
-          <div className="grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-1">
             {[
               {
                 icon: LuBrainCircuit,
@@ -571,7 +571,7 @@ export default function QuantoraWalletResearch() {
             ].map((feature, index) => (
               <motion.div
                 key={feature.title}
-                className="glass"
+                className="glass glass-p"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
