@@ -48,7 +48,7 @@ const CyberpunkDataHeist = ({ onComplete }) => {
       delay: 1000
     },
     {
-      text: "BREACH COMPLETE - WELCOME AGENT",
+      text: "BREACH COMPLETE WELCOME AGENT",
       description: "Access granted to the resistance...",
       progress: 100,
       color: "green-400",
@@ -213,10 +213,11 @@ const CyberpunkDataHeist = ({ onComplete }) => {
       {/* Main Mobile Terminal Interface */}
       <div className="relative z-10 flex items-center justify-center min-h-screen px-3">
         <motion.div
-          className={`
-            bg-black/85 border border-${hackingStages[hackingStage]?.color || 'lime-400'}/60
-            rounded-2xl p-4 w-full max-w-sm backdrop-blur-sm
-          `}
+        //   className={`
+        //     bg-black/85 border border-${hackingStages[hackingStage]?.color || 'lime-400'}/60
+        //     rounded-2xl p-4 w-full max-w-sm backdrop-blur-sm
+        //   `}
+        className='w-full px-2 h-full'
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.6, type: "spring", bounce: 0.3 }}
