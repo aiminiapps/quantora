@@ -24,6 +24,7 @@ import {
 } from 'react-icons/hi';
 import { LuBrainCircuit } from "react-icons/lu";
 import { SquareCheckBig, UserPlus, History, Check, CheckCircle } from 'lucide-react';
+import QuantoraWalletResearch from '@/components/QuantoraWalletResearch';
 
 // Premium Intro Carousel Component
 const QuantoraIntroCarousel = ({ user, onComplete }) => {
@@ -632,7 +633,8 @@ function TelegramMiniApp() {
       case 'task':
         return <TaskCenter user={user} />;
       case 'invite':
-        return <InviteCenter user={user} />;
+        // return <InviteCenter user={user} />;
+        return <QuantoraWalletResearch/>;
       default:
         return renderHomeContent();
     }
