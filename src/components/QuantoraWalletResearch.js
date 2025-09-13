@@ -593,7 +593,7 @@ export default function QuantoraWalletResearch() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
           >
-            <div className="p-6 bg-gradient-to-br from-blue-500/20 to-purple-400/20 rounded-2xl">
+            <div className="">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
@@ -738,11 +738,11 @@ export default function QuantoraWalletResearch() {
 
               {/* TON Balance */}
               <div className="glass">
-                <div className="p-5">
+                <div className="">
                   <div className="flex items-center gap-2 mb-4">
-                    <div className="w-8 h-8 bg-blue-400/20 rounded-full flex items-center justify-center">
+                    {/* <div className="w-8 h-8 bg-blue-400/20 rounded-full flex items-center justify-center">
                       <span className="text-blue-400 font-bold text-sm">TON</span>
-                    </div>
+                    </div> */}
                     <h3 className="text-white font-bold">Native TON</h3>
                   </div>
                   
