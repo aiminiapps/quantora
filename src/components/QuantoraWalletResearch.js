@@ -474,7 +474,7 @@ export default function QuantoraWalletResearch() {
   }, [tonWallet?.account?.address, fetchTonAssets, fetchJettonPrices, calculatePortfolioValue, performRealAIAnalysis]);
 
   return (
-    <div className="pb-20 space-y-6">
+    <div className="pb-28 space-y-6">
       {/* Header */}
       <motion.div 
         className="glass mb-6"
