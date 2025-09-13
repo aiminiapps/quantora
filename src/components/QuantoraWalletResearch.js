@@ -4,17 +4,12 @@ import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TonConnectButton, useTonWallet, useTonConnectUI } from '@tonconnect/ui-react';
 import { 
-  HiOutlineShieldCheck,
-  HiOutlineLightningBolt,
   HiOutlineEye,
   HiOutlineTrendingUp,
   HiOutlineGlobe,
   HiSparkles,
   HiOutlineRefresh,
   HiOutlineChartBar,
-  HiOutlineDocumentSearch,
-  HiOutlineFire,
-  HiOutlineUsers,
   HiOutlinePhotograph,
   HiOutlineCollection
 } from 'react-icons/hi';
