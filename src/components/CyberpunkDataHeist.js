@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 const CyberpunkDataHeist = ({ onComplete }) => {
   const [hackingStage, setHackingStage] = useState(0);
   const [progress, setProgress] = useState(0);
-  const [matrixChars, setMatrixChars] = useState([]);
   const [glitchActive, setGlitchActive] = useState(false);
   const [scanlinePosition, setScanlinePosition] = useState(0);
   const [typedText, setTypedText] = useState('');
@@ -55,40 +54,6 @@ const CyberpunkDataHeist = ({ onComplete }) => {
       delay: 500
     }
   ];
-
-  // Mobile-optimized Matrix rain effect
-  useEffect(() => {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$₿Ξ⧫◇※";
-    const columns = Math.floor(window.innerWidth / 15); 
-    
-    const drops = [];
-    for (let i = 0; i < Math.min(columns, 25); i++) { 
-      drops[i] = 1;
-    }
-
-    const matrix = setInterval(() => {
-      setMatrixChars(prevChars => {
-        const newChars = [];
-        
-        for (let i = 0; i < drops.length; i++) {
-          const text = chars[Math.floor(Math.random() * chars.length)];
-          const x = i * 15;
-          const y = drops[i] * 20;
-          
-          newChars[i] = { char: text, x, y, opacity: Math.random() * 0.8 };
-          
-          if (drops[i] * 20 > window.innerHeight && Math.random() > 0.98) {
-            drops[i] = 0;
-          }
-          drops[i]++;
-        }
-        
-        return newChars;
-      });
-    }, 120);
-
-    return () => clearInterval(matrix);
-  }, []);
 
   // Mobile scanline animation
   useEffect(() => {
