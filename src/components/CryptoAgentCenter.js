@@ -9,11 +9,8 @@ import {
   HiOutlineGlobeAlt, 
   HiOutlineUsers, 
   HiOutlineTrendingUp,
-  HiArrowRight,
   HiOutlineShieldCheck,
-  HiOutlineLightningBolt,
-  HiOutlineStar,
-  HiOutlineSparkles
+  HiOutlineLightningBolt
 } from 'react-icons/hi';
 
 const QuantoraAgentCenter = () => {
