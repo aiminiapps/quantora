@@ -152,28 +152,6 @@ const CyberpunkDataHeist = ({ onComplete }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 via-black to-gray-900 relative overflow-hidden font-mono">
-      {/* Mobile Matrix Rain Background */}
-      <div className="absolute inset-0">
-        {matrixChars.map((item, index) => (
-          <motion.div
-            key={index}
-            className="absolute text-lime-400/60 text-xs pointer-events-none"
-            style={{
-              left: item.x,
-              top: item.y,
-              opacity: item.opacity
-            }}
-            animate={{ 
-              y: [item.y, item.y + 80],
-              opacity: [item.opacity, 0]
-            }}
-            transition={{ duration: 1.8, ease: "linear" }}
-          >
-            {item.char}
-          </motion.div>
-        ))}
-      </div>
-
       {/* Subtle Scanline Effect */}
       <div 
         className="absolute left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent pointer-events-none"
