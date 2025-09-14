@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Plus, AlertTriangle, Flame, Clock } from 'lucide-react';
 import Image from 'next/image';
 
-// /coinslogo/bnb.png
 const AINewsCenter = () => {
 const [newsData] = useState([
   {
