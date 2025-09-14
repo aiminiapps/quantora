@@ -3,7 +3,6 @@ import "./globals.css";
 import Script from "next/script";
 import Web3Provider from "@/components/Web3Provider";
 
-// Fonts
 const orbitron = Orbitron({
   variable: "--font-orbitron",
   subsets: ["latin"],
