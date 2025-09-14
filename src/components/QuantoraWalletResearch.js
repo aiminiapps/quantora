@@ -24,11 +24,10 @@ function isTelegramWebApp() {
 }
 
 export default function QuantoraWalletResearch() {
-  // Real TON Wallet hooks
+  // TON Wallet hooks
   const tonWallet = useTonWallet();
   const [tonConnectUI] = useTonConnectUI();
   
-  // Component state for real assets
   const [assets, setAssets] = useState(null);
   const [tonBalance, setTonBalance] = useState(0);
   const [portfolioValue, setPortfolioValue] = useState(0);
