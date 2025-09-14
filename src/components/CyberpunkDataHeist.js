@@ -59,10 +59,10 @@ const CyberpunkDataHeist = ({ onComplete }) => {
   // Mobile-optimized Matrix rain effect
   useEffect(() => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$₿Ξ⧫◇※";
-    const columns = Math.floor(window.innerWidth / 15); // Smaller columns for mobile
+    const columns = Math.floor(window.innerWidth / 15); 
     
     const drops = [];
-    for (let i = 0; i < Math.min(columns, 25); i++) { // Limit to 25 columns max
+    for (let i = 0; i < Math.min(columns, 25); i++) { 
       drops[i] = 1;
     }
 
