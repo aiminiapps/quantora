@@ -106,7 +106,7 @@ const QuantoraTaskCenter = () => {
       gradient: 'from-black to-black',
       action: () => {
         setTwitterFollowCompleted(true);
-        window.open('https://x.com/RevX_officialX', '_blank');
+        window.open('https://x.com/drquantora', '_blank');
       }
     },
     {
