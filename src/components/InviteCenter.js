@@ -49,7 +49,7 @@ function QuantoraInviteCenter() {
   };
 
   const generateInviteLink = () => {
-    return 'https://t.me/Quantora_Research_Bot';
+    return 'https://t.me/drQuantora_Bot';
   };
 
   const handleCopyCode = async () => {
