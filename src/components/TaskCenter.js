@@ -7,12 +7,8 @@ import {
   HiOutlineGift,
   HiOutlineShare,
   HiOutlineUsers,
-  HiOutlineHeart,
   HiSparkles,
-  HiOutlineTrendingUp,
   HiOutlineClipboard,
-  HiOutlineClock,
-  HiOutlineStar,
   HiPlay
 } from 'react-icons/hi';
 import { BsTwitterX } from "react-icons/bs";
