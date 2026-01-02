@@ -7,14 +7,10 @@ import {
   HiOutlineClipboard, 
   HiOutlineShare, 
   HiOutlineCheckCircle,
-  HiSparkles,
   HiOutlineGift,
   HiOutlineHeart,
-  HiOutlineStar,
-  HiPlay,
-  HiOutlineChartBar
+  HiOutlineStar
 } from 'react-icons/hi';
-import { LuBrainCircuit } from "react-icons/lu";
 import { HiOutlineTrophy } from "react-icons/hi2";
 
 function QuantoraInviteCenter() {
