@@ -91,7 +91,7 @@ const QuantoraTaskCenter = () => {
       icon: HiOutlineShare,
       color: 'cyan-400',
       gradient: 'from-cyan-400 to-blue-500',
-      action: () => window.open('https://x.com/RevX_officialX/status/1934413183164600476', '_blank')
+      action: () => window.open('https://x.com/drquantora/status/1998282169660133530?s=20', '_blank')
     }
   ];
 
