@@ -104,39 +104,77 @@ export default function QuantoraDashboard() {
     } catch (err) { console.error(err); }
   };
 
+  // --- REAL AI AGENT INTERACTION ---
   const sendChatMessage = async (manualInput = null) => {
-    const text = manualInput || userInput;
-    if (!text.trim() || isTyping) return;
+    const currentInput = manualInput || userInput;
+    if (!currentInput.trim() || isTyping) return;
 
-    setUserInput('');
-    setChatMessages(p => [...p, { id: Date.now(), role: 'user', content: text, timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]);
+    setUserInput(''); // Clear input for better UX
+    
+    // Add user message immediately
+    const userMessage = {
+      id: Date.now(),
+      role: 'user',
+      content: currentInput,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setChatMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
 
-    // Simulated AI Delay/Fallback (Replace with your actual /api/agent call)
     try {
-        // Construct context for your /api/agent
-        const context = `Assets: ${portfolioData.assets.length}, Value: $${portfolioData.totalValue}`;
+      // Construct a data-rich context prompt
+      const contextPrompt = `
+        CONTEXT: You are PORTLY.AI, an advanced crypto portfolio assistant.
+        USER DATA:
+        - Wallet: ${walletAddress || 'Connected'}
+        - Total Net Worth: $${portfolioData?.totalValue || 0}
+        - Asset Count: ${portfolioData?.assets?.length || 0}
+        - Top 3 Assets: ${portfolioData?.assets?.slice(0,3).map(a => `${a.symbol} ($${a.value})`).join(', ') || 'None'}
+        - Risk Score: ${portfolioData?.riskScore || 'N/A'}
         
-        // Example Fetch (Commented out to prevent errors if API isn't ready)
-        /* const res = await fetch('/api/agent', { 
-            method: 'POST', 
-            body: JSON.stringify({ prompt: text, context }) 
-        });
-        const data = await res.json();
-        */
+        USER QUESTION: "${currentInput}"
+        
+        INSTRUCTIONS: Answer concisely in Markdown. Use bold for key figures. Be professional but conversational.
+      `;
 
-        // Mock Response for UI Demo
-        setTimeout(() => {
-            setChatMessages(p => [...p, {
-                id: Date.now()+1,
-                role: 'assistant',
-                content: `I've analyzed your request regarding **${portfolioData.assets.length} assets**. \n\nMarket sentiment is currently neutral. Would you like a rebalancing strategy?`,
-                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-            }]);
-            setIsTyping(false);
-        }, 1500);
+      const response = await fetch('/api/agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            { role: "system", content: "You are a helpful financial AI assistant." },
+            { role: "user", content: contextPrompt }
+          ]
+        })
+      });
 
-    } catch (e) { setIsTyping(false); }
+      if (response.ok) {
+        const data = await response.json();
+        const reply = data.reply || "I'm analyzing the blockchain data. Could you rephrase that?";
+        
+        setChatMessages(prev => [...prev, {
+          id: Date.now() + 1,
+          role: 'assistant',
+          content: reply,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }]);
+      } else {
+        throw new Error("API Failure");
+      }
+    } catch (error) {
+      console.error(error);
+      // Smart Fallback using local data if API fails
+      setTimeout(() => {
+        setChatMessages(prev => [...prev, {
+          id: Date.now() + 1,
+          role: 'assistant',
+          content: `**Network Update:** I'm currently running in offline mode.\n\nBased on your local cache:\n* **Holdings:** ${portfolioData?.assets?.length} assets\n* **Top Asset:** ${portfolioData?.assets?.[0]?.symbol || 'N/A'}\n\nPlease check your connection for deeper market analysis.`,
+          timestamp: new Date().toLocaleTimeString()
+        }]);
+      }, 1500);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   // --- RENDER HELPERS ---
