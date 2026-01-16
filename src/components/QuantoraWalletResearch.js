@@ -3,12 +3,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ethers } from 'ethers';
+import ReactMarkdown from 'react-markdown'; // Handled via react-markdown
 import { 
   HiOutlinePaperAirplane, 
   HiOutlineLightningBolt, 
-  HiOutlineTrendingUp, 
   HiOutlineShieldCheck,
-  HiOutlineCreditCard,
   HiTerminal
 } from 'react-icons/hi';
 import { HiOutlineWallet } from "react-icons/hi2";
@@ -35,7 +34,7 @@ export default function QuantoraDashboard() {
     { 
       id: 'init', 
       role: 'assistant', 
-      content: "Welcome back, Operator. I am connected to your live portfolio feed. How can I assist you today?", 
+      content: "## System Online \n\nWelcome back, Operator. I am **Quantora AI**. \n\n* **Status:** Connected to blockchain \n* **Ready:** Waiting for input... \n\nHow can I assist you today?", 
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
     }
   ]);
@@ -77,7 +76,6 @@ export default function QuantoraDashboard() {
       
       if (data.assets) {
         const assetCount = data.assets.length;
-        // Simple Logic for Risk Score
         const risk = assetCount < 2 ? "High Concentration" : "Balanced";
         
         setPortfolioData({
@@ -97,7 +95,6 @@ export default function QuantoraDashboard() {
       if (accounts[0]) {
         setWalletAddress(accounts[0]);
         localStorage.setItem('quantora_wallet', accounts[0]);
-        // Trigger data load
         fetchPortfolio(accounts[0]);
         fetchLivePrices();
       }
@@ -124,7 +121,7 @@ export default function QuantoraDashboard() {
     try {
       // Construct a data-rich context prompt
       const contextPrompt = `
-        CONTEXT: You are PORTLY.AI, an advanced crypto portfolio assistant.
+        CONTEXT: You are QUANTORA.AI, an advanced crypto portfolio assistant.
         USER DATA:
         - Wallet: ${walletAddress || 'Connected'}
         - Total Net Worth: $${portfolioData?.totalValue || 0}
@@ -134,7 +131,7 @@ export default function QuantoraDashboard() {
         
         USER QUESTION: "${currentInput}"
         
-        INSTRUCTIONS: Answer concisely in Markdown. Use bold for key figures. Be professional but conversational.
+        INSTRUCTIONS: Answer concisely in Markdown. Use Bold for values. Use lists for clarity. Do not use code blocks unless asked.
       `;
 
       const response = await fetch('/api/agent', {
@@ -163,12 +160,12 @@ export default function QuantoraDashboard() {
       }
     } catch (error) {
       console.error(error);
-      // Smart Fallback using local data if API fails
+      // Smart Fallback (Offline Mode)
       setTimeout(() => {
         setChatMessages(prev => [...prev, {
           id: Date.now() + 1,
           role: 'assistant',
-          content: `**Network Update:** I'm currently running in offline mode.\n\nBased on your local cache:\n* **Holdings:** ${portfolioData?.assets?.length} assets\n* **Top Asset:** ${portfolioData?.assets?.[0]?.symbol || 'N/A'}\n\nPlease check your connection for deeper market analysis.`,
+          content: `## Network Offline \n\nI'm currently running in **local mode**. \n\n### Cached Data:\n* **Holdings:** ${portfolioData?.assets?.length} assets\n* **Top Asset:** ${portfolioData?.assets?.[0]?.symbol || 'N/A'}\n\nPlease check your connection for deeper market analysis.`,
           timestamp: new Date().toLocaleTimeString()
         }]);
       }, 1500);
@@ -187,13 +184,12 @@ export default function QuantoraDashboard() {
   // --- VIEW: CONNECT WALLET (LOCKED) ---
   if (!walletAddress) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] px- text-center">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
         <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             className="w-full max-w-sm p-8 rounded-3xl backdrop-blur-xl bg-white/5 border border-white/10 shadow-2xl shadow-lime-900/5 relative overflow-hidden"
         >
-            {/* Decorative Glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 bg-lime-400/20 rounded-full blur-3xl pointer-events-none" />
 
             <div className="relative z-10 flex flex-col items-center">
@@ -211,7 +207,7 @@ export default function QuantoraDashboard() {
                     className="group relative w-full py-4 bg-lime-400 text-black font-black tektur rounded-xl overflow-hidden transition-transform active:scale-95"
                 >
                     <span className="relative z-10 flex items-center justify-center gap-2">
-                        <img src='https://images.ctfassets.net/clixtyxoaeas/4rnpEzy1ATWRKVBOLxZ1Fm/a74dc1eed36d23d7ea6030383a4d5163/MetaMask-icon-fox.svg' alt='metamask logo' className='h-8 w-8'/>
+                        <img src='https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg' alt='metamask logo' className='h-6 w-6'/>
                         Connect MetaMask
                     </span>
                     <div className="absolute inset-0 bg-white/40 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
@@ -236,7 +232,7 @@ export default function QuantoraDashboard() {
         </button>
       </motion.div>
 
-      {/* 1. MARKET TICKER (Clean Glass) */}
+      {/* 1. MARKET TICKER */}
       <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="grid grid-cols-4 gap-2 mb-6">
         {[
           { id: 'bitcoin', sym: 'BTC' },
@@ -272,18 +268,15 @@ export default function QuantoraDashboard() {
                 </div>
             </div>
 
-            {/* Asset List Headers */}
             <div className="grid grid-cols-12 text-[10px] text-white/30 uppercase font-bold mb-3 px-2">
                 <div className="col-span-5">Asset</div>
                 <div className="col-span-3 text-right">Price</div>
                 <div className="col-span-4 text-right">Value</div>
             </div>
 
-            {/* Scrollable List */}
             <div className="space-y-2 max-h-[180px] overflow-y-auto pr-1 custom-scrollbar">
                 {portfolioData.assets.map((asset, i) => (
                     <div key={i} className="grid grid-cols-12 items-center p-2 rounded-lg hover:bg-white/5 transition-colors group/item">
-                        {/* Token Info */}
                         <div className="col-span-5 flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/80 border border-white/5">
                                 {asset.chain === 'Ethereum' ? <SiEthereum size={14} /> : 
@@ -295,11 +288,9 @@ export default function QuantoraDashboard() {
                                 <div className="text-[9px] text-white/40">{Number(asset.balance).toFixed(4)}</div>
                             </div>
                         </div>
-                        {/* Price */}
                         <div className="col-span-3 text-right">
                             <div className="text-xs text-white/60">${asset.price?.toLocaleString()}</div>
                         </div>
-                        {/* Total Value */}
                         <div className="col-span-4 text-right">
                             <div className="text-xs font-bold text-white">${Number(asset.value).toLocaleString()}</div>
                         </div>
@@ -312,16 +303,14 @@ export default function QuantoraDashboard() {
         </div>
       </motion.div>
 
-      {/* 3. AI CHAT INTERFACE (Redesigned) */}
+      {/* 3. AI CHAT INTERFACE (With ReactMarkdown) */}
       <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="flex mb-28 flex-col h-[400px] backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
         
-        {/* Chat Title */}
         <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2 bg-white/5">
             <div className="w-2 h-2 rounded-full bg-lime-400 animate-pulse" />
             <span className="text-xs font-bold text-white tracking-wide">QUANTORA AI ANALYST</span>
         </div>
 
-        {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
             {chatMessages.map((msg) => (
                 <motion.div 
@@ -330,18 +319,36 @@ export default function QuantoraDashboard() {
                     animate={{ opacity: 1, y: 0 }}
                     className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                 >
-                    <div className={`max-w-[85%] px-4 py-3 rounded-2xl text-xs leading-5 ${
+                    <div className={`max-w-[90%] px-4 py-3 rounded-2xl text-xs leading-relaxed ${
                         msg.role === 'user' 
                         ? 'bg-lime-400 text-black font-semibold rounded-tr-sm shadow-lg shadow-lime-400/10' 
                         : 'bg-white/10 text-gray-200 border border-white/5 rounded-tl-sm backdrop-blur-md'
                     }`}>
-                        {msg.content}
+                        {/* THE MARKDOWN HANDLER */}
+                        {msg.role === 'assistant' ? (
+                          <ReactMarkdown 
+                            components={{
+                              // Custom styling for specific markdown elements to match Glass Theme
+                              strong: ({node, ...props}) => <span className="text-lime-400 font-bold" {...props} />,
+                              p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
+                              ul: ({node, ...props}) => <ul className="list-disc list-inside mb-2 space-y-1" {...props} />,
+                              li: ({node, ...props}) => <li className="text-white/90" {...props} />,
+                              h1: ({node, ...props}) => <h1 className="text-lg font-black text-white mb-2" {...props} />,
+                              h2: ({node, ...props}) => <h2 className="text-sm font-bold text-white mb-2 border-b border-white/10 pb-1" {...props} />,
+                              h3: ({node, ...props}) => <h3 className="text-xs font-bold text-white/80 mb-1" {...props} />,
+                              code: ({node, ...props}) => <code className="bg-black/30 px-1 py-0.5 rounded text-lime-200 font-mono text-[10px]" {...props} />
+                            }}
+                          >
+                            {msg.content}
+                          </ReactMarkdown>
+                        ) : (
+                          msg.content
+                        )}
                     </div>
                     <span className="text-[9px] text-white/20 mt-1 px-1">{msg.timestamp}</span>
                 </motion.div>
             ))}
             
-            {/* Thinking Indicator */}
             {isTyping && (
                 <div className="flex items-center gap-1.5 ml-2 p-2">
                     <div className="w-1.5 h-1.5 bg-lime-400/50 rounded-full animate-bounce" />
@@ -352,7 +359,6 @@ export default function QuantoraDashboard() {
             <div ref={chatEndRef} />
         </div>
 
-        {/* Input Area */}
         <div className="p-3 bg-white/5 border-t border-white/5">
             <div className="relative">
                 <input
