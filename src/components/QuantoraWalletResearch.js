@@ -6,7 +6,9 @@ import { ethers } from 'ethers';
 import ReactMarkdown from 'react-markdown';
 import { 
   HiOutlinePaperAirplane, 
-  HiOutlineShieldCheck
+  HiOutlineLightningBolt, 
+  HiOutlineShieldCheck,
+  HiTerminal
 } from 'react-icons/hi';
 import { HiOutlineWallet } from "react-icons/hi2";
 import { SiEthereum, SiBinance, SiPolygon } from 'react-icons/si';
@@ -85,8 +87,25 @@ export default function QuantoraDashboard() {
     } catch (e) { console.error(e); }
   };
 
+  // --- WALLET CONNECTION (UPDATED FOR MOBILE) ---
   const connectWallet = async () => {
-    if (!window.ethereum) return alert("MetaMask not found!");
+    // 1. Check for Mobile Device
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    // 2. Mobile Deep Link Logic
+    if (isMobile && !window.ethereum) {
+        // This constructs a deep link that opens the CURRENT page inside the MetaMask App
+        const currentUrl = window.location.host + window.location.pathname;
+        const metaMaskDeepLink = `https://metamask.app.link/dapp/${currentUrl}`;
+        
+        // Redirect user to the App (or Store if not installed)
+        window.location.href = metaMaskDeepLink;
+        return;
+    }
+
+    // 3. Desktop / In-App Browser Logic
+    if (!window.ethereum) return alert("MetaMask not found! Please install the extension.");
+    
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const accounts = await provider.send("eth_requestAccounts", []);
@@ -99,7 +118,7 @@ export default function QuantoraDashboard() {
     } catch (err) { console.error(err); }
   };
 
-  // --- REAL AI AGENT INTERACTION ---
+  // --- AI AGENT INTERACTION ---
   const sendChatMessage = async (manualInput = null) => {
     const currentInput = manualInput || userInput;
     if (!currentInput.trim() || isTyping) return;
@@ -221,7 +240,7 @@ export default function QuantoraDashboard() {
     <div className="max-w-xl mx-auto">
       
       {/* HEADER */}
-      <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="flex justify-between items-center mb-3">
+      <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
             <span className="font-bold text-white tracking-wider tektur">QUANTORA</span>
         </div>
@@ -326,7 +345,6 @@ export default function QuantoraDashboard() {
                         {msg.role === 'assistant' ? (
                           <ReactMarkdown 
                             components={{
-                              // Custom styling for specific markdown elements to match Glass Theme
                               strong: ({node, ...props}) => <span className="text-lime-400 font-bold" {...props} />,
                               p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
                               ul: ({node, ...props}) => <ul className="list-disc list-inside mb-2 space-y-1" {...props} />,
