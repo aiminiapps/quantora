@@ -149,7 +149,7 @@ export default function QuantoraDashboard() {
   // --- VIEW: CONNECT WALLET (LOCKED) ---
   if (!walletAddress) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px- text-center">
         <motion.div 
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
