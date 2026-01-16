@@ -173,7 +173,7 @@ export default function QuantoraDashboard() {
                     className="group relative w-full py-4 bg-lime-400 text-black font-black tektur rounded-xl overflow-hidden transition-transform active:scale-95"
                 >
                     <span className="relative z-10 flex items-center justify-center gap-2">
-                        <HiOutlineLightningBolt className="text-lg" /> 
+                        <img src='https://images.ctfassets.net/clixtyxoaeas/4rnpEzy1ATWRKVBOLxZ1Fm/a74dc1eed36d23d7ea6030383a4d5163/MetaMask-icon-fox.svg' alt='metamask logo' className='h-8 w-8'/>
                         Connect MetaMask
                     </span>
                     <div className="absolute inset-0 bg-white/40 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
@@ -186,13 +186,12 @@ export default function QuantoraDashboard() {
 
   // --- VIEW: DASHBOARD (UNLOCKED) ---
   return (
-    <div className="pb-24 pt-4 px-4 max-w-xl mx-auto">
+    <div className="max-w-xl mx-auto">
       
       {/* HEADER */}
       <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="flex justify-between items-center mb-6">
         <div className="flex items-center gap-2">
-            <HiTerminal className="text-lime-400 w-5 h-5" />
-            <span className="font-bold text-white tracking-wider tektur">QUANTORA <span className="text-lime-400">OS</span></span>
+            <span className="font-bold text-white tracking-wider tektur">QUANTORA</span>
         </div>
         <button onClick={disconnect} className="text-[10px] text-red-400/70 hover:text-red-400 border border-red-400/20 px-3 py-1 rounded-full transition-colors">
             DISCONNECT
@@ -220,7 +219,7 @@ export default function QuantoraDashboard() {
       {/* 2. PORTFOLIO CARD */}
       <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="mb-6 relative group">
         <div className="absolute inset-0 bg-lime-400/5 blur-xl rounded-2xl group-hover:bg-lime-400/10 transition-colors duration-500" />
-        <div className="relative glass glass-p p-5 rounded-2xl border border-white/10 backdrop-blur-xl">
+        <div className="relative glass rounded-2xl border border-white/10 backdrop-blur-xl">
             
             <div className="flex justify-between items-start mb-6">
                 <div>
@@ -276,7 +275,7 @@ export default function QuantoraDashboard() {
       </motion.div>
 
       {/* 3. AI CHAT INTERFACE (Redesigned) */}
-      <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="flex flex-col h-[400px] backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+      <motion.div variants={fadeInUp} initial="hidden" animate="visible" className="flex mb-28 flex-col h-[400px] backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
         
         {/* Chat Title */}
         <div className="px-4 py-3 border-b border-white/5 flex items-center gap-2 bg-white/5">
