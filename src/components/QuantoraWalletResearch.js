@@ -3,12 +3,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ethers } from 'ethers';
-import ReactMarkdown from 'react-markdown'; // Handled via react-markdown
+import ReactMarkdown from 'react-markdown';
 import { 
   HiOutlinePaperAirplane, 
-  HiOutlineLightningBolt, 
-  HiOutlineShieldCheck,
-  HiTerminal
+  HiOutlineShieldCheck
 } from 'react-icons/hi';
 import { HiOutlineWallet } from "react-icons/hi2";
 import { SiEthereum, SiBinance, SiPolygon } from 'react-icons/si';
@@ -223,7 +221,7 @@ export default function QuantoraDashboard() {
     <div className="max-w-xl mx-auto">
       
       {/* HEADER */}
-      <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="flex justify-between items-center mb-6">
+      <motion.div initial="hidden" animate="visible" variants={fadeInUp} className="flex justify-between items-center mb-3">
         <div className="flex items-center gap-2">
             <span className="font-bold text-white tracking-wider tektur">QUANTORA</span>
         </div>
